@@ -1,0 +1,24 @@
+[submodule "tests/vc-di-ecdsa-test-suite"]
+	path = tests/vc-di-ecdsa-test-suite
+	url = https://github.com/w3c/vc-di-ecdsa-test-suite.git
+[submodule "tests/vc-di-eddsa-test-suite"]
+	path = tests/vc-di-eddsa-test-suite
+	url = https://github.com/w3c/vc-di-eddsa-test-suite.git
+[submodule "tests/vc-di-ed25519signature2020-test-suite"]
+	path = tests/vc-di-ed25519signature2020-test-suite
+	url = https://github.com/w3c/vc-di-ed25519signature2020-test-suite.git
+[submodule "tests/vc-api-issuer-test-suite"]
+	path = tests/vc-api-issuer-test-suite
+	url = https://github.com/w3c-ccg/vc-api-issuer-test-suite.git
+[submodule "tests/vc-api-verifier-test-suite"]
+	path = tests/vc-api-verifier-test-suite
+	url = https://github.com/w3c-ccg/vc-api-verifier-test-suite.git
+[submodule "tests/did-key-test-suite"]
+	path = tests/did-key-test-suite
+	url = https://github.com/w3c-ccg/did-key-test-suite.git
+[submodule "tests/vc-data-model-2.0-test-suite"]
+	path = tests/vc-data-model-2.0-test-suite
+	url = https://github.com/w3c/vc-data-model-2.0-test-suite.git
+[submodule "tests/vc-di-bbs-test-suite"]
+	path = tests/vc-di-bbs-test-suite
+	url = https://github.com/w3c/vc-di-bbs-test-suite.git
