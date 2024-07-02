@@ -1,11 +1,9 @@
+use anyhow::{anyhow, Context};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use ssi::{
-    dids::resolution,
-    verification_methods::{InvalidVerificationMethod, VerificationMethodResolutionError},
-};
+use ssi::dids::resolution;
 use tracing::{debug, error};
 
 #[derive(Debug, Clone)]
@@ -20,24 +18,6 @@ pub enum ErrorBody {
     // Json(serde_json::Value),
 }
 
-impl From<VerificationMethodResolutionError> for Error {
-    fn from(value: VerificationMethodResolutionError) -> Self {
-        Error {
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-            body: ErrorBody::Text(value.to_string()),
-        }
-    }
-}
-
-impl From<InvalidVerificationMethod> for Error {
-    fn from(value: InvalidVerificationMethod) -> Self {
-        Error {
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-            body: ErrorBody::Text(value.to_string()),
-        }
-    }
-}
-
 impl From<resolution::Error> for Error {
     fn from(value: resolution::Error) -> Self {
         Self {
@@ -49,7 +29,12 @@ impl From<resolution::Error> for Error {
                 | resolution::Error::InvalidOptions
                 | resolution::Error::NoRepresentation => StatusCode::BAD_REQUEST,
                 resolution::Error::MethodNotSupported(_) => StatusCode::NOT_IMPLEMENTED,
-                resolution::Error::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                e @ resolution::Error::Internal(_) => {
+                    return Err::<(), _>(e)
+                        .context("Internal resolution error")
+                        .unwrap_err()
+                        .into()
+                }
             },
             body: ErrorBody::Text(format!("Resolution failed: {value}")),
         }
@@ -58,7 +43,8 @@ impl From<resolution::Error> for Error {
 
 impl From<resolution::DerefError> for Error {
     fn from(value: resolution::DerefError) -> Self {
-        let status = match &value {
+        let body = ErrorBody::Text(format!("Dereferencing failed: {value}"));
+        let status = match value {
             resolution::DerefError::Resolution(e) => match e {
                 resolution::Error::NotFound => StatusCode::NOT_FOUND,
                 resolution::Error::RepresentationNotSupported(_) => StatusCode::NOT_ACCEPTABLE,
@@ -67,7 +53,12 @@ impl From<resolution::DerefError> for Error {
                 | resolution::Error::InvalidOptions
                 | resolution::Error::NoRepresentation => StatusCode::BAD_REQUEST,
                 resolution::Error::MethodNotSupported(_) => StatusCode::NOT_IMPLEMENTED,
-                resolution::Error::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                e @ resolution::Error::Internal(_) => {
+                    return Err::<(), _>(e)
+                        .context("Internal resolution error")
+                        .unwrap_err()
+                        .into()
+                }
             },
             resolution::DerefError::NotFound | resolution::DerefError::ResourceNotFound(_) => {
                 StatusCode::NOT_FOUND
@@ -77,13 +68,17 @@ impl From<resolution::DerefError> for Error {
             | resolution::DerefError::UnsupportedMultipleServiceEndpoints => {
                 StatusCode::NOT_IMPLEMENTED
             }
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
+            e @ resolution::DerefError::ServiceEndpointConstructionFailed(_) => {
+                return Err::<(), _>(e)
+                    .context("service endpoint construction failed")
+                    .unwrap_err()
+                    .into()
+            }
+            resolution::DerefError::FragmentConflict => return anyhow!("Fragment conflict").into(),
+            resolution::DerefError::NullDereference => return anyhow!("Null Dereference").into(),
         };
 
-        Self {
-            status,
-            body: ErrorBody::Text(format!("Dereferencing failed: {value}")),
-        }
+        Self { status, body }
     }
 }
 

@@ -90,12 +90,8 @@ pub async fn resolve(
                     match content_type {
                         ContentType::JsonLdDidResolution => {
                             serde_json::to_vec(&ResolutionResult::Success {
-                                content: String::from_utf8(output.document).map_err(|_| {
-                                    (
-                                        StatusCode::INTERNAL_SERVER_ERROR,
-                                        "Non UTF-8 representation".to_string(),
-                                    )
-                                })?,
+                                content: String::from_utf8(output.document)
+                                    .context("Non UTF-8 representation".to_string())?,
                                 metadata: output.metadata,
                                 document_metadata: output.document_metadata,
                             })
@@ -145,12 +141,8 @@ pub async fn resolve(
                     match content_type {
                         ContentType::JsonLdDidResolution => {
                             serde_json::to_vec(&ResolutionResult::Success {
-                                content: String::from_utf8(bytes).map_err(|_| {
-                                    (
-                                        StatusCode::INTERNAL_SERVER_ERROR,
-                                        "Non UTF-8 representation".to_string(),
-                                    )
-                                })?,
+                                content: String::from_utf8(bytes)
+                                    .context("Non UTF-8 representation".to_string())?,
                                 metadata: output.metadata,
                                 document_metadata: output.content_metadata,
                             })

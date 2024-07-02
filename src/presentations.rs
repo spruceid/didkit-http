@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
@@ -49,46 +49,39 @@ pub async fn issue(
 
     // Find an appropriate verification method.
     let method = match &req.options.ldp_options.input_options.verification_method {
-        Some(method) => {
-            resolver
-                .resolve_verification_method(Some(holder.as_iri()), Some(method.borrowed()))
-                .await?
-        }
+        Some(method) => resolver
+            .resolve_verification_method(Some(holder.as_iri()), Some(method.borrowed()))
+            .await
+            .context("Could not resolve VM")?,
         None => {
-            let did = DID::new(&holder).map_err(|_| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not get any verification method for holder URI".to_string(),
-                )
-            })?;
+            let did = DID::new(&holder)
+                .map_err(|_| anyhow!("Could not get any verification method for holder URI"))?;
 
-            let output = resolver.resolve(did).await.map_err(|_| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not fetch holder DID document".to_string(),
-                )
-            })?;
+            let output = resolver
+                .resolve(did)
+                .await
+                .context("Could not fetch holder DID document")?;
 
             let method = output
                 .document
                 .into_document()
                 .into_any_verification_method()
-                .ok_or((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not get any verification method for holder DID document",
-                ))?;
+                .context("Could not get any verification method for holder DID document")?;
 
             req.options.ldp_options.input_options.verification_method =
                 Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
 
-            Cow::Owned(GenericVerificationMethod::from(method).try_into()?)
+            Cow::Owned(
+                GenericVerificationMethod::from(method)
+                    .try_into()
+                    .context("Could not convert VM")?,
+            )
         }
     };
 
-    let public_jwk = method.try_to_jwk().ok_or((
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Could not get any verification method for holder DID".to_string(),
-    ))?;
+    let public_jwk = method
+        .try_to_jwk()
+        .context("Could not get any verification method for holder DID")?;
 
     let res = match req.options.proof_format {
         ProofFormat::Jwt => {

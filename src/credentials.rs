@@ -1,20 +1,20 @@
-use std::borrow::{Borrow, BorrowMut, Cow};
+use std::borrow::Cow;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
-        data_integrity::{CryptographicSuite, DataIntegrity},
+        data_integrity::CryptographicSuite,
         vc::{
             v1::{Credential as _, ToJwtClaims},
-            v2::{self, Credential as _},
+            v2::Credential as _,
             AnyJsonCredential, AnySpecializedJsonCredential,
         },
         JsonCredentialOrJws, VerifiableClaims, VerificationEnvironment,
     },
     dids::{AnyDidMethod, DIDResolver, VerificationMethodDIDResolver, DID},
-    json_ld::{self, json_ld::Iri},
+    json_ld::json_ld::Iri,
     prelude::JWSPayload,
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
@@ -56,52 +56,45 @@ pub async fn issue(
     let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
 
     let issuer = match req.credential {
-        AnySpecializedJsonCredential::V1(ref vc) => &vc.issuer,
-        AnySpecializedJsonCredential::V2(ref vc) => &vc.issuer,
+        AnySpecializedJsonCredential::V1(ref vc) => vc.issuer.clone(),
+        AnySpecializedJsonCredential::V2(ref vc) => vc.issuer.clone(),
     };
 
     // Find an appropriate verification method.
     let method = match &req.options.ldp_options.input_options.verification_method {
-        Some(method) => {
-            resolver
-                .resolve_verification_method(Some(issuer.id().as_iri()), Some(method.borrowed()))
-                .await?
-        }
+        Some(method) => resolver
+            .resolve_verification_method(Some(issuer.id().as_iri()), Some(method.borrowed()))
+            .await
+            .context("Could not resolve VM")?,
         None => {
-            let did = DID::new(issuer.id()).map_err(|_| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not get any verification method for issuer URI".to_string(),
-                )
-            })?;
+            let did = DID::new(issuer.id())
+                .map_err(|_| anyhow!("Could not get any verification method for issuer URI"))?;
 
-            let output = resolver.resolve(did).await.map_err(|_| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not fetch issuer DID document".to_string(),
-                )
-            })?;
+            let output = resolver
+                .resolve(did)
+                .await
+                .context("Could not fetch issuer DID document")?;
 
             let method = output
                 .document
                 .into_document()
                 .into_any_verification_method()
-                .ok_or((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Could not get any verification method for issuer DID document",
-                ))?;
+                .context("Could not get any verification method for issuer DID document")?;
 
             req.options.ldp_options.input_options.verification_method =
                 Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
 
-            Cow::Owned(GenericVerificationMethod::from(method).try_into()?)
+            Cow::Owned(
+                GenericVerificationMethod::from(method)
+                    .try_into()
+                    .context("Could not convert VM")?,
+            )
         }
     };
 
-    let public_jwk = method.try_to_jwk().ok_or((
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Could not get any verification method for issuer DID".to_string(),
-    ))?;
+    let public_jwk = method
+        .try_to_jwk()
+        .context("Could not get any verification method for issuer DID")?;
 
     if req.options.ldp_options.type_ == Some("DataIntegrityProof".to_string()) {
         if req.options.ldp_options.cryptosuite.is_none() {
@@ -181,26 +174,19 @@ pub async fn issue(
                 )
                 .await
                 .context("Failed to sign VC")?;
-            //if let Some(p) = vc.proofs.first_mut() {
-            //    if let Some(proof_context) = &p.context {
-            //        match vc.claims {
-            //            AnySpecializedJsonCredential::V1(ref mut vc) => {
-            //                let mut context = vc.context.as_ref();
-            //                *context = &json_ld::syntax::Context::Many(
-            //                    context.into_iter().chain(proof_context).cloned().collect(),
-            //                );
-            //            }
-            //            AnySpecializedJsonCredential::V2(ref mut vc) => {
-            //                //let context = vc.context.borrow_mut();
-            //                //context = json_ld::syntax::Context::Many(
-            //                //    context.into_iter().chain(proof_context).cloned().collect(),
-            //                //);
-            //                todo!();
-            //            }
-            //        }
-            //        p.context = None;
-            //    }
-            //}
+            if let Some(p) = vc.proofs.first_mut() {
+                if let Some(proof_context) = &p.context {
+                    match vc.claims {
+                        AnySpecializedJsonCredential::V1(ref mut vc) => {
+                            vc.context.extend(proof_context.clone());
+                        }
+                        AnySpecializedJsonCredential::V2(ref mut vc) => {
+                            vc.context.extend(proof_context.clone());
+                        }
+                    }
+                    p.context = None;
+                }
+            }
 
             JsonCredentialOrJws::Credential(vc)
         }
@@ -347,7 +333,6 @@ mod test {
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 
-    #[ignore = "Depends on https://github.com/spruceid/ssi/pull/560"]
     #[test(tokio::test)]
     async fn issue_ed25519() {
         let keys = default_keys();

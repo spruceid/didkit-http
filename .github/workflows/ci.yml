@@ -45,51 +45,51 @@ jobs:
     - name: Clippy
       run: cargo clippy
 
-  # vc_api_test_suites:
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       suite:
-  #         # - "vc-api-issuer-test-suite" # not updated to latest test suites config
-  #         # - "vc-api-verifier-test-suite" # not updated to latest test suites config
-  #         # - "vc-di-ecdsa-test-suite" # ssi lost support for ecdsa and they updated the ids
-  #         # - "vc-di-eddsa-test-suite" # ssi doesn't have support for eddsa-rdfc-2022 just yet
-  #         # - "vc-di-ed25519signature2020-test-suite" # ssi needs support for editing VC context
-  #         # - "did-key-test-suite" # not updated to latest test suites config
-  #         # - "vc-data-model-2.0-test-suite" # ssi doesn't yet have full support for VCDM 2
-  #         # - "vc-di-bbs-test-suite" # ssi doesn't yet have support for BBS
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       path: didkit-http
-  #       submodules: true
-  #   - name: Checkout SSI library
-  #     uses: actions/checkout@v4
-  #     with:
-  #       repository: spruceid/ssi
-  #       path: ssi
-  #       ref: ${{env.SSI_REF}}
-  #   - name: Rust Cache
-  #     uses: Swatinem/rust-cache@v2
-  #     with:
-  #       workspaces: |
-  #         didkit-http
-  #       shared-key: "vc-api"
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version: 18
-  #   - name: Start VC API
-  #     run: |
-  #       cargo build
-  #       DIDKIT_HTTP_ISSUER_KEYS='[{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}]' cargo run &
-  #   - name: Start HTTPS Proxy
-  #     run: npx local-ssl-proxy --source 9000 --target 3000 --hostname 127.0.0.1 &
-  #   - name: Setup Test Suite
-  #     run: |
-  #       cd tests/${{ matrix.suite }}
-  #       npm i
-  #       ln ../localConfig.cjs localConfig.cjs
-  #   - name: Run Test Suite
-  #     run: |
-  #       cd tests/${{ matrix.suite }}
-  #       npm test
+  vc_api_test_suites:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite:
+          # - "vc-api-issuer-test-suite" # not updated to latest test suites config
+          # - "vc-api-verifier-test-suite" # not updated to latest test suites config
+          # - "vc-di-ecdsa-test-suite" # ssi lost support for ecdsa and they updated the ids
+          # - "vc-di-eddsa-test-suite" # ssi doesn't have support for eddsa-rdfc-2022 just yet
+          - "vc-di-ed25519signature2020-test-suite"
+          # - "did-key-test-suite" # not updated to latest test suites config
+          # - "vc-data-model-2.0-test-suite" # ssi doesn't yet have full support for VCDM 2
+          # - "vc-di-bbs-test-suite" # ssi doesn't yet have support for BBS
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: didkit-http
+        submodules: true
+    - name: Checkout SSI library
+      uses: actions/checkout@v4
+      with:
+        repository: spruceid/ssi
+        path: ssi
+        ref: ${{env.SSI_REF}}
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: |
+          didkit-http
+        shared-key: "vc-api"
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - name: Start VC API
+      run: |
+        cargo build
+        DIDKIT_HTTP_ISSUER_KEYS='[{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}]' cargo run &
+    - name: Start HTTPS Proxy
+      run: npx local-ssl-proxy --source 9000 --target 3000 --hostname 127.0.0.1 &
+    - name: Setup Test Suite
+      run: |
+        cd tests/${{ matrix.suite }}
+        npm i
+        ln ../localConfig.cjs localConfig.cjs
+    - name: Run Test Suite
+      run: |
+        cd tests/${{ matrix.suite }}
+        npm test
