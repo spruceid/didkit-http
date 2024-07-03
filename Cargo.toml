@@ -12,7 +12,7 @@ repository = "https://github.com/spruceid/didkit-http"
 exclude = ["/tests"]
 
 [dependencies]
-ssi = { version = "0.8.0", path = "../ssi" }
+ssi = { git = "https://github.com/spruceid/ssi.git", rev = "10deab4" }
 
 anyhow = "1.0.70"
 axum = { version = "0.7.5", features = ["macros"] }

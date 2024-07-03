@@ -1,11 +1,10 @@
 name: cd
 
-# Temporarily disabled until ssi is published
 on:
-  # push:
-  #   branches: [ main ]
-  # release:
-  #     types: [published, created, edited]
+  push:
+    branches: [ main ]
+  release:
+      types: [published, created, edited]
   workflow_dispatch:
 
 jobs:
@@ -32,7 +31,7 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v6
       with:
         push: true
         tags: ${{ steps.meta.outputs.tags }}

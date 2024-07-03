@@ -8,12 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SSI_REF: main
   RUSTFLAGS: "-Dwarnings"
-
-defaults:
-  run:
-    working-directory: didkit-http
 
 jobs:
   build:
@@ -21,22 +16,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        path: didkit-http
         submodules: true
-
-    - name: Checkout SSI library
-      uses: actions/checkout@v4
-      with:
-        repository: spruceid/ssi
-        path: ssi
-        ref: ${{env.SSI_REF}}
-        submodules: true
-
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: |
-          didkit-http
+    - uses: Swatinem/rust-cache@v2
 
     - name: Build
       run: cargo build
@@ -61,19 +42,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        path: didkit-http
         submodules: true
-    - name: Checkout SSI library
-      uses: actions/checkout@v4
+    - uses: Swatinem/rust-cache@v2
       with:
-        repository: spruceid/ssi
-        path: ssi
-        ref: ${{env.SSI_REF}}
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: |
-          didkit-http
         shared-key: "vc-api"
     - uses: actions/setup-node@v4
       with:
