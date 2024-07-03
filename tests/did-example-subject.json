@@ -1,0 +1,29 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3c-ccg.github.io/lds-jws2020/contexts/lds-jws2020-v1.json",
+    {
+      "Ed25519VerificationKey2018": "https://w3id.org/security#Ed25519VerificationKey2018",
+      "publicKeyBase58": "https://w3id.org/security#publicKeyBase58",
+      "publicKeyJwk": {
+        "@id": "https://w3id.org/security#publicKeyJwk",
+        "@type": "@json"
+      }
+    }
+  ],
+  "id": "did:example:subject",
+  "verificationMethod": [
+    {
+      "id": "did:example:subject#key1",
+      "type": "Ed25519VerificationKey2020",
+      "controller": "did:example:subject",
+      "publicKeyMultibase": "z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD"
+    }
+  ],
+  "assertionMethod": [
+    "did:example:subject#key1"
+  ],
+  "authentication": [
+    "did:example:subject#key1"
+  ]
+}

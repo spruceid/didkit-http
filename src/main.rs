@@ -17,6 +17,7 @@ use crate::keys::KeyMap;
 
 mod config;
 mod credentials;
+mod dids;
 mod error;
 mod identifiers;
 mod keys;

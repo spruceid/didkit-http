@@ -1,19 +1,15 @@
 use std::borrow::Cow;
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
         data_integrity::CryptographicSuite,
-        vc::{
-            v1::{Credential as _, ToJwtClaims},
-            v2::Credential as _,
-            AnyJsonCredential, AnySpecializedJsonCredential,
-        },
-        JsonCredentialOrJws, VerifiableClaims, VerificationEnvironment,
+        vc::{v1::ToJwtClaims, AnyJsonCredential, AnySpecializedJsonCredential},
+        JsonCredentialOrJws, SignatureError, VerifiableClaims,
     },
-    dids::{AnyDidMethod, DIDResolver, VerificationMethodDIDResolver, DID},
+    dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::json_ld::Iri,
     prelude::JWSPayload,
     verification_methods::{
@@ -25,6 +21,7 @@ use ssi::{
 use tracing::debug;
 
 use crate::{
+    dids::AnyDidMethod,
     error::Error,
     keys::KeyMapSigner,
     utils::{
@@ -61,40 +58,46 @@ pub async fn issue(
     };
 
     // Find an appropriate verification method.
-    let method = match &req.options.ldp_options.input_options.verification_method {
-        Some(method) => resolver
-            .resolve_verification_method(Some(issuer.id().as_iri()), Some(method.borrowed()))
-            .await
-            .context("Could not resolve VM")?,
-        None => {
-            let did = DID::new(issuer.id())
-                .map_err(|_| anyhow!("Could not get any verification method for issuer URI"))?;
-
-            let output = resolver
-                .resolve(did)
+    let public_jwk = match &req.options.ldp_options.input_options.verification_method {
+        Some(method) => {
+            let method = resolver
+                .resolve_verification_method(Some(issuer.id().as_iri()), Some(method.borrowed()))
                 .await
-                .context("Could not fetch issuer DID document")?;
+                .context("Could not resolve VM")?;
+            method
+                .try_to_jwk()
+                .context("Could not get any verification method for issuer DID")?
+                .into_owned()
+        }
+        None => {
+            if let Ok(did) = DID::new(issuer.id()) {
+                let output = resolver
+                    .resolve(did)
+                    .await
+                    .context("Could not fetch issuer DID document")?;
 
-            let method = output
-                .document
-                .into_document()
-                .into_any_verification_method()
-                .context("Could not get any verification method for issuer DID document")?;
+                let method = output
+                    .document
+                    .into_document()
+                    .into_any_verification_method()
+                    .context("Could not get any verification method for issuer DID document")?;
 
-            req.options.ldp_options.input_options.verification_method =
-                Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
+                req.options.ldp_options.input_options.verification_method =
+                    Some(ReferenceOrOwned::Reference(method.id.clone().into_iri()));
 
-            Cow::Owned(
-                GenericVerificationMethod::from(method)
-                    .try_into()
-                    .context("Could not convert VM")?,
-            )
+                let method = Cow::<AnyMethod>::Owned(
+                    AnyMethod::try_from(GenericVerificationMethod::from(method))
+                        .context("Could not convert VM")?,
+                );
+                method
+                    .try_to_jwk()
+                    .context("Could not get any verification method for issuer DID")?
+                    .into_owned()
+            } else {
+                keys.keys().find(|_| true).unwrap().clone()
+            }
         }
     };
-
-    let public_jwk = method
-        .try_to_jwk()
-        .context("Could not get any verification method for issuer DID")?;
 
     if req.options.ldp_options.type_ == Some("DataIntegrityProof".to_string()) {
         if req.options.ldp_options.cryptosuite.is_none() {
@@ -123,23 +126,8 @@ pub async fn issue(
             if vc.issuance_date.is_none() {
                 vc.issuance_date = Some(DateTime::now_ms());
             }
-            if let Err(err) = vc.validate_credential(&VerificationEnvironment::default()) {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    format!("Credential not valid, {err:?}"),
-                )
-                    .into());
-            }
         }
-        AnySpecializedJsonCredential::V2(ref vc) => {
-            if let Err(err) = vc.validate_credential(&VerificationEnvironment::default()) {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    format!("Credential not valid, {err:?}"),
-                )
-                    .into());
-            }
-        }
+        AnySpecializedJsonCredential::V2(_) => {}
     }
 
     let res = match req.options.proof_format {
@@ -165,7 +153,7 @@ pub async fn issue(
                 .context("Could not select suite from JWK")?;
 
             let signer = KeyMapSigner(keys).into_local();
-            let mut vc = suite
+            let mut vc = match suite
                 .sign(
                     req.credential,
                     resolver,
@@ -173,7 +161,14 @@ pub async fn issue(
                     req.options.ldp_options.input_options,
                 )
                 .await
-                .context("Failed to sign VC")?;
+            {
+                Ok(vc) => vc,
+                Err(SignatureError::Other(e)) => {
+                    return Err((StatusCode::BAD_REQUEST, format!("Failed to sign VC: {e}")))?
+                }
+                Err(e) => Err(e).context("Failed to sign VC")?,
+            };
+
             if let Some(p) = vc.proofs.first_mut() {
                 if let Some(proof_context) = &p.context {
                     match vc.claims {
@@ -214,7 +209,7 @@ pub async fn verify(
     let resolver = VerificationMethodDIDResolver::new(AnyDidMethod::default());
     let res = match (req.options.proof_format, req.verifiable_credential) {
         (Some(ProofFormat::Ldp) | None, JsonCredentialOrJws::Credential(vc)) => {
-            match vc.verify(&resolver).await {
+            let mut res = match vc.verify(&resolver).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -230,7 +225,25 @@ pub async fn verify(
                     warnings: vec![],
                     errors: vec![err.to_string()],
                 },
+            };
+            for proof in vc.proofs {
+                if let Some(ref challenge) = req.options.challenge {
+                    if Some(challenge.clone()) != proof.challenge {
+                        res.errors.insert(0, "Invalid challenge".into());
+                    }
+                }
+                if let Some(ref domain) = req.options.domain {
+                    if !proof.domains.contains(domain) {
+                        res.errors.insert(0, "Invalid domain".into());
+                    }
+                }
+                if let Some(ref proof_purpose) = req.options.expected_proof_purpose {
+                    if proof_purpose != &proof.proof_purpose {
+                        res.errors.insert(0, "Invalid proof purpose".into());
+                    }
+                }
             }
+            res
         }
         (Some(ProofFormat::Jwt) | None, JsonCredentialOrJws::Jws(vc_jwt)) => {
             // TODO: only the JWS is verified this way. We must also validate the inner VC.
@@ -438,6 +451,116 @@ mod test {
           },
           "options": {
             "type": "DataIntegrityProof"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_vcdm2_did_example() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2"
+            ],
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:example:issuer",
+            "credentialSubject": {
+              "id": "did:example:subject"
+            }
+          },
+          "options": {
+            "type": "Ed25519Signature2020"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_vcdm2_did_example_evidence() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              {
+                "DocumentVerification2018": "https://example.org/examples#DocumentVerification2018"
+              }
+            ],
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:example:issuer",
+            "credentialSubject": {
+              "id": "did:example:subject"
+            },
+            "evidence": [
+              {
+                "type": "DocumentVerification2018"
+              },
+              {
+                "type": "DocumentVerification2018"
+              }
+            ]
+          },
+          "options": {
+            "type": "Ed25519Signature2020"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_vcdm2_validuntil() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2"
+            ],
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:example:issuer",
+            "validFrom": "2023-02-26T01:19:19Z",
+            "validUntil": "2023-02-26T01:19:20Z",
+            "credentialSubject": {
+              "id": "did:example:subject"
+            }
+          },
+          "options": {
+            "type": "Ed25519Signature2020"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "don't know the JWK and VM, will require writting a custom VerificationMethodResolver"]
+    #[test(tokio::test)]
+    async fn issue_vcdm2_non_did_issuer() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2"
+            ],
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "https://some-url/issuer/foo",
+            "credentialSubject": {
+              "id": "did:example:subject"
+            }
+          },
+          "options": {
+            "type": "Ed25519Signature2020"
           }
         }))
         .unwrap();

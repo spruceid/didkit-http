@@ -9,7 +9,7 @@ use ssi::{
         vc::{v1::ToJwtClaims, AnyJsonPresentation},
         JWSPayload, JsonPresentationOrJws, VerifiableClaims,
     },
-    dids::{AnyDidMethod, DIDResolver, VerificationMethodDIDResolver, DID},
+    dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
@@ -17,9 +17,13 @@ use ssi::{
 };
 
 use crate::{
+    dids::AnyDidMethod,
     error::Error,
     keys::KeyMapSigner,
-    utils::{Check, JWTOrLDPOptions, ProofFormat, VerificationOptions, VerificationResult},
+    utils::{
+        Check, CustomErrorJson, JWTOrLDPOptions, ProofFormat, VerificationOptions,
+        VerificationResult,
+    },
     KeyMap,
 };
 
@@ -136,11 +140,13 @@ pub struct VerifyRequest {
     pub options: VerificationOptions,
 }
 
-pub async fn verify(Json(req): Json<VerifyRequest>) -> Result<Json<VerificationResult>, Error> {
+pub async fn verify(
+    CustomErrorJson(req): CustomErrorJson<VerifyRequest>,
+) -> Result<Json<VerificationResult>, Error> {
     let resolver = VerificationMethodDIDResolver::new(AnyDidMethod::default());
     let res = match (req.options.proof_format, req.verifiable_presentation) {
         (Some(ProofFormat::Ldp) | None, JsonPresentationOrJws::Presentation(vp)) => {
-            match vp.verify(&resolver).await {
+            let mut res = match vp.verify(&resolver).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -156,7 +162,25 @@ pub async fn verify(Json(req): Json<VerifyRequest>) -> Result<Json<VerificationR
                     warnings: vec![],
                     errors: vec![err.to_string()],
                 },
+            };
+            for proof in vp.proofs {
+                if let Some(ref challenge) = req.options.challenge {
+                    if Some(challenge.clone()) != proof.challenge {
+                        res.errors.insert(0, "Invalid challenge".into());
+                    }
+                }
+                if let Some(ref domain) = req.options.domain {
+                    if !proof.domains.contains(domain) {
+                        res.errors.insert(0, "Invalid domain".into());
+                    }
+                }
+                if let Some(ref proof_purpose) = req.options.expected_proof_purpose {
+                    if proof_purpose != &proof.proof_purpose {
+                        res.errors.insert(0, "Invalid proof purpose".into());
+                    }
+                }
             }
+            res
         }
         (Some(ProofFormat::Jwt) | None, JsonPresentationOrJws::Jws(vp_jwt)) => {
             // TODO: only the JWS is verified this way. We must also validate the inner VP.
@@ -194,4 +218,66 @@ pub async fn verify(Json(req): Json<VerifyRequest>) -> Result<Json<VerificationR
         return Err((StatusCode::BAD_REQUEST, format!("{:?}", res.errors)).into());
     }
     Ok(Json(res))
+}
+
+#[cfg(test)]
+mod test {
+    use serde_json::json;
+    use test_log::test;
+
+    use super::*;
+
+    #[ignore = "signature is invalid"]
+    #[test(tokio::test)]
+    async fn verify_vcdm2() {
+        let req = serde_json::from_value(json!({
+          "verifiablePresentation": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2"
+            ],
+            "type": [
+              "VerifiablePresentation"
+            ],
+            "verifiableCredential": [
+              {
+                "@context": [
+                  "https://www.w3.org/ns/credentials/v2"
+                ],
+                "type": [
+                  "VerifiableCredential"
+                ],
+                "issuer": "did:key:z6MkpJySvETLnxhQG9DzEdmKJtysBDjuuTeDfUj1uNNCUqcj",
+                "credentialSubject": {
+                  "id": "did:example:subject"
+                },
+                "proof": {
+                  "type": "DataIntegrityProof",
+                  "created": "2024-07-02T10:33:16Z",
+                  "verificationMethod": "did:key:z6MkpJySvETLnxhQG9DzEdmKJtysBDjuuTeDfUj1uNNCUqcj#z6MkpJySvETLnxhQG9DzEdmKJtysBDjuuTeDfUj1uNNCUqcj",
+                  "cryptosuite": "eddsa-2022",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "zbJYGavw4pjX6yYKEerRouumTHSSVmwRWTXyL6EMKUo6p4xbkz3kxLdaBYbhxGQeJFnY6pcuLVtf41n7YwWLFsec"
+                }
+              }
+            ],
+            "proof": {
+              "type": "DataIntegrityProof",
+              "created": "2024-07-02T10:33:16Z",
+              "verificationMethod": "did:key:z6MkpJySvETLnxhQG9DzEdmKJtysBDjuuTeDfUj1uNNCUqcj#z6MkpJySvETLnxhQG9DzEdmKJtysBDjuuTeDfUj1uNNCUqcj",
+              "cryptosuite": "eddsa-2022",
+              "proofPurpose": "authentication",
+              "challenge": "uWQkjjZIowzWX185I9ZsNuw",
+              "proofValue": "z37FhmXEsjNDFwyD8gD9Yp1egsSxiiNkNXvp3MCCbGcjb8u4t5BK7xB623c75pHmdkh7zpggjheQJeJHTNzP7KKHh"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ],
+            "challenge": "uWQkjjZIowzWX185I9ZsNuw"
+          }
+        }))
+        .unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
 }

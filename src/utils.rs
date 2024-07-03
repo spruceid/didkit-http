@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use ssi::{
     claims::data_integrity::{AnyInputOptions, AnySuite},
     jwk::{Algorithm, JWK},
+    verification_methods::ProofPurpose,
 };
 use tracing::debug;
 
@@ -199,7 +200,7 @@ impl LDPOptions {
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[non_exhaustive]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+//#[serde(deny_unknown_fields)]
 pub struct VerificationOptions {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub checks: Vec<Check>,
@@ -207,6 +208,15 @@ pub struct VerificationOptions {
     /// Proof format (not standard in vc-api)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proof_format: Option<ProofFormat>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub challenge: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_proof_purpose: Option<ProofPurpose>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
