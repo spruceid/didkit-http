@@ -4,9 +4,7 @@ RUN cargo install cargo-chef
 WORKDIR /app
 
 FROM chef AS planner
-COPY ./defaults.toml ./
-COPY ./Cargo.toml ./
-COPY ./src/ ./src/
+COPY ./ ./
 RUN sed -i -e 's/path .*,//g' ./Cargo.toml
 RUN cargo chef prepare --recipe-path recipe.json
 

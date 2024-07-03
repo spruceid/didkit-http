@@ -1,0 +1,11 @@
+.DS_Store
+.git
+target
+.github
+docs
+.gitignore
+CODEOWNERS
+README.md
+docker-compose.yml
+Dockerfile
+.cargo
