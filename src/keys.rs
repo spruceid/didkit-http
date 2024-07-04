@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use ssi::{
+    claims::SignatureError,
     verification_methods::{LocalSigner, MaybeJwkVerificationMethod, Signer},
     JWK,
 };
@@ -18,8 +19,14 @@ impl KeyMapSigner {
 impl<M: MaybeJwkVerificationMethod> Signer<M> for KeyMapSigner {
     type MessageSigner = JWK;
 
-    async fn for_method(&self, method: std::borrow::Cow<'_, M>) -> Option<Self::MessageSigner> {
-        let public_jwk = method.try_to_jwk()?;
-        self.0.get(&public_jwk).cloned()
+    async fn for_method(
+        &self,
+        method: std::borrow::Cow<'_, M>,
+    ) -> Result<Option<Self::MessageSigner>, SignatureError> {
+        if let Some(public_jwk) = method.try_to_jwk() {
+            Ok(self.0.get(&public_jwk).cloned())
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -33,7 +33,7 @@ jobs:
         suite:
           # - "vc-api-issuer-test-suite" # not updated to latest test suites config
           # - "vc-api-verifier-test-suite" # not updated to latest test suites config
-          # - "vc-di-ecdsa-test-suite" # ssi lost support for ecdsa and they updated the ids
+          # - "vc-di-ecdsa-test-suite" # https://github.com/w3c/vc-di-ecdsa-test-suite/issues/86
           # - "vc-di-eddsa-test-suite" # ssi doesn't have support for eddsa-rdfc-2022 just yet
           - "vc-di-ed25519signature2020-test-suite"
           # - "did-key-test-suite" # not updated to latest test suites config
@@ -52,7 +52,8 @@ jobs:
     - name: Start VC API
       run: |
         cargo build
-        DIDKIT_HTTP_ISSUER_KEYS='[{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}]' cargo run &
+        export DIDKIT_HTTP_ISSUER_KEYS='[{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}, {"kty":"EC","crv":"P-256","x":"c01opxmxLeRMYhyTaiOKzvOF6DDjEajzb968ClJWB9Q","y":"oM3B1R0J-Cynleb00D-PManSGnlltcgsMJaoPbPOewU","d":"g-jUBRnfkbsxOQhtrBZd9l_ElOAw8BoJufTFUut2uHI"}, {"kty":"EC","crv":"P-384","x":"G09OCsHnoen7IWnA9ETEKl7NmPwakpHo9KOH5bUB2nJzyn5Zco-qqBchqUi1-uaz","y":"_CtCA3SUZS4IEOJN999aLTEIQOOWOX9biXqbFs4OCa1OMvjoVzzC2BimVnHrrcQ7","d":"qCiwiC8sASQ3chYPN8BodDImdVbn-didbDeQdQAnGJYoRWryN3xF1xX96w6SJTx6"}]'
+        cargo run &
     - name: Start HTTPS Proxy
       run: npx local-ssl-proxy --source 9000 --target 3000 --hostname 127.0.0.1 &
     - name: Setup Test Suite

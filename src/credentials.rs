@@ -1,16 +1,16 @@
 use std::borrow::Cow;
 
-use anyhow::Context;
+use anyhow::Context as _;
 use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
         data_integrity::CryptographicSuite,
         vc::{v1::ToJwtClaims, AnyJsonCredential, AnySpecializedJsonCredential},
-        JsonCredentialOrJws, SignatureError, VerifiableClaims,
+        JsonCredentialOrJws, SignatureError, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
-    json_ld::json_ld::Iri,
+    json_ld::syntax::Context,
     prelude::JWSPayload,
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
@@ -18,6 +18,7 @@ use ssi::{
     },
     xsd_types::DateTime,
 };
+use static_iref::iri;
 use tracing::debug;
 
 use crate::{
@@ -107,16 +108,21 @@ pub async fn issue(
         if let AnySpecializedJsonCredential::V1(ref vc) = req.credential {
             if !vc
                 .context
-                .contains_iri(Iri::new("https://w3id.org/security/data-integrity/v1").unwrap())
+                .contains_iri(iri!("https://w3id.org/security/data-integrity/v1"))
+                && !vc
+                    .context
+                    .contains_iri(iri!("https://w3id.org/security/data-integrity/v2"))
             {
-                req.options
-                    .ldp_options
-                    .input_options
-                    .extra_properties
-                    .insert(
-                        "@context".to_string(),
-                        "https://w3id.org/security/data-integrity/v1".into(),
-                    );
+                let di_context = iri!("https://w3id.org/security/data-integrity/v2").into();
+                req.options.ldp_options.input_options.context =
+                    match req.options.ldp_options.input_options.context {
+                        None => Some(Context::one(di_context)),
+                        Some(Context::One(c)) => Some(Context::Many(vec![c, di_context])),
+                        Some(Context::Many(mut c)) => {
+                            c.push(di_context);
+                            Some(Context::Many(c))
+                        }
+                    };
             }
         }
     }
@@ -169,17 +175,17 @@ pub async fn issue(
                 Err(e) => Err(e).context("Failed to sign VC")?,
             };
 
-            if let Some(p) = vc.proofs.first_mut() {
-                if let Some(proof_context) = &p.context {
+            for proof in vc.proofs.iter_mut() {
+                if let Some(proof_context) = proof.context.clone() {
                     match vc.claims {
                         AnySpecializedJsonCredential::V1(ref mut vc) => {
-                            vc.context.extend(proof_context.clone());
+                            vc.context.extend(proof_context);
                         }
                         AnySpecializedJsonCredential::V2(ref mut vc) => {
-                            vc.context.extend(proof_context.clone());
+                            vc.context.extend(proof_context);
                         }
                     }
-                    p.context = None;
+                    proof.context = None;
                 }
             }
 
@@ -206,10 +212,11 @@ pub struct VerifyRequest {
 pub async fn verify(
     CustomErrorJson(req): CustomErrorJson<VerifyRequest>,
 ) -> Result<Json<VerificationResult>, Error> {
-    let resolver = VerificationMethodDIDResolver::new(AnyDidMethod::default());
+    let resolver = AnyDidMethod::default().into_vm_resolver();
+    let verifier = VerificationParameters::from_resolver(&resolver);
     let res = match (req.options.proof_format, req.verifiable_credential) {
         (Some(ProofFormat::Ldp) | None, JsonCredentialOrJws::Credential(vc)) => {
-            let mut res = match vc.verify(&resolver).await {
+            let mut res = match vc.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -247,7 +254,7 @@ pub async fn verify(
         }
         (Some(ProofFormat::Jwt) | None, JsonCredentialOrJws::Jws(vc_jwt)) => {
             // TODO: only the JWS is verified this way. We must also validate the inner VC.
-            match vc_jwt.verify(&resolver).await {
+            match vc_jwt.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -319,7 +326,6 @@ mod test {
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 
-    #[ignore = "ssi has lost support for ecdsa-2019, but it will come back soon."]
     #[test(tokio::test)]
     async fn issue_p256() {
         let keys = default_keys();
@@ -398,7 +404,7 @@ mod test {
     }
 
     #[test(tokio::test)]
-    async fn validate_valid_vc_verifier_test_suite() {
+    async fn verify_valid_vc_verifier_test_suite() {
         let req = serde_json::from_value(json!({
           "verifiableCredential": {
             "@context": [
@@ -565,5 +571,130 @@ mod test {
         }))
         .unwrap();
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn verify_valid_vc_ecdsa_p256() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              },
+              "https://w3id.org/security/data-integrity/v2"
+            ],
+            "id": "urn:uuid:36245ee9-9074-4b05-a777-febff2e69757",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440",
+              "driverLicense": {
+                "type": "DriverLicense",
+                "documentIdentifier": "T21387yc328c7y32h23f23",
+                "dateOfBirth": "01-01-1990",
+                "expirationDate": "01-01-2030",
+                "issuingAuthority": "VA"
+              }
+            },
+            "issuer": "did:key:zDnaepBuvsQ8cpsWrVKw8fbpGpvPeNSjVPTWoq6cRqaYzBKVP",
+            "issuanceDate": "2024-07-03T10:31:54Z",
+            "proof": {
+              "type": "DataIntegrityProof",
+              "created": "2024-07-03T10:31:54Z",
+              "verificationMethod": "did:key:zDnaepBuvsQ8cpsWrVKw8fbpGpvPeNSjVPTWoq6cRqaYzBKVP#zDnaepBuvsQ8cpsWrVKw8fbpGpvPeNSjVPTWoq6cRqaYzBKVP",
+              "cryptosuite": "ecdsa-rdfc-2019",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "zWWuXUjmHd9ZWwATq8ZcjyFxSjEHubzBGrNopWyVRdrnpnb9YQ9K8b4KC7T3sBKg2yz4QUZ2oT3ecizYRkqjMEg2"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ]
+          }
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "https://github.com/w3c/vc-di-ecdsa-test-suite/issues/86"]
+    #[test(tokio::test)]
+    async fn verify_valid_vc_ecdsa_p384() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              }
+            ],
+            "id": "urn:uuid:36245ee9-9074-4b05-a777-febff2e69757",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440",
+              "driverLicense": {
+                "type": "DriverLicense",
+                "documentIdentifier": "T21387yc328c7y32h23f23",
+                "dateOfBirth": "01-01-1990",
+                "expirationDate": "01-01-2030",
+                "issuingAuthority": "VA"
+              }
+            },
+            "issuer": "did:key:z82LkuBieyGShVBhvtE2zoiD6Kma4tJGFtkAhxR5pfkp5QPw4LutoYWhvQCnGjdVn14kujQ",
+            "proof": {
+              "type": "DataIntegrityProof",
+              "created": "2024-07-03T13:50:33Z",
+              "verificationMethod": "did:key:z82LkuBieyGShVBhvtE2zoiD6Kma4tJGFtkAhxR5pfkp5QPw4LutoYWhvQCnGjdVn14kujQ#z82LkuBieyGShVBhvtE2zoiD6Kma4tJGFtkAhxR5pfkp5QPw4LutoYWhvQCnGjdVn14kujQ",
+              "cryptosuite": "ecdsa-rdfc-2019",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "z2EtWvK6tYMLdHs3Yw3yPUS8YK2ajrboDX3G7eLwMm2nz4GBy3arnEDGQXJd4EFWjQo1VZMYv8G7iFR9sgCwKZGC2evpwgxy4pRVeSx7uYUnh6ZUydmKBgoGu7oMRydGRLwdG"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ]
+          }
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
     }
 }

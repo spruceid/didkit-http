@@ -12,7 +12,9 @@ repository = "https://github.com/spruceid/didkit-http"
 exclude = ["/tests"]
 
 [dependencies]
-ssi = { git = "https://github.com/spruceid/ssi.git", rev = "10deab4" }
+ssi = { git = "https://github.com/spruceid/ssi.git", rev = "c0d81d4", features = [
+    "secp384r1",
+] }
 
 anyhow = "1.0.70"
 axum = { version = "0.7.5", features = ["macros"] }
@@ -27,6 +29,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_with = { version = "2.1.0", features = ["json"] }
 serde_urlencoded = "0.7"
+iref = "3.1.2"
+static-iref = "3.0"
 url = { version = "2.3.1", features = ["serde"] }
 percent-encoding = "2.2.0"
 

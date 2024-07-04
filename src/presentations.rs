@@ -7,7 +7,7 @@ use ssi::{
     claims::{
         data_integrity::CryptographicSuite,
         vc::{v1::ToJwtClaims, AnyJsonPresentation},
-        JWSPayload, JsonPresentationOrJws, VerifiableClaims,
+        JWSPayload, JsonPresentationOrJws, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     verification_methods::{
@@ -143,10 +143,11 @@ pub struct VerifyRequest {
 pub async fn verify(
     CustomErrorJson(req): CustomErrorJson<VerifyRequest>,
 ) -> Result<Json<VerificationResult>, Error> {
-    let resolver = VerificationMethodDIDResolver::new(AnyDidMethod::default());
+    let resolver = AnyDidMethod::default().into_vm_resolver();
+    let verifier = VerificationParameters::from_resolver(&resolver);
     let res = match (req.options.proof_format, req.verifiable_presentation) {
         (Some(ProofFormat::Ldp) | None, JsonPresentationOrJws::Presentation(vp)) => {
-            let mut res = match vp.verify(&resolver).await {
+            let mut res = match vp.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -184,7 +185,7 @@ pub async fn verify(
         }
         (Some(ProofFormat::Jwt) | None, JsonPresentationOrJws::Jws(vp_jwt)) => {
             // TODO: only the JWS is verified this way. We must also validate the inner VP.
-            match vp_jwt.verify(&resolver).await {
+            match vp_jwt.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
                     warnings: vec![],
@@ -227,7 +228,6 @@ mod test {
 
     use super::*;
 
-    #[ignore = "signature is invalid"]
     #[test(tokio::test)]
     async fn verify_vcdm2() {
         let req = serde_json::from_value(json!({
