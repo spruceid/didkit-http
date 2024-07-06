@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
         data_integrity::CryptographicSuite,
-        vc::{v1::ToJwtClaims, AnyJsonCredential, AnySpecializedJsonCredential},
+        vc::{
+            syntax::NonEmptyObject, v1::ToJwtClaims, AnyJsonCredential,
+            AnySpecializedJsonCredential,
+        },
         JsonCredentialOrJws, SignatureError, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
@@ -22,7 +25,7 @@ use static_iref::iri;
 use tracing::debug;
 
 use crate::{
-    dids::AnyDidMethod,
+    dids::{AnyDidMethod, CustomVerificationMethodResolver},
     error::Error,
     keys::KeyMapSigner,
     utils::{
@@ -52,10 +55,24 @@ pub async fn issue(
     debug!("{req:?}");
 
     let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
+    let resolver = CustomVerificationMethodResolver {
+        did_resolver: resolver,
+        keys: keys.clone(),
+    };
 
     let issuer = match req.credential {
         AnySpecializedJsonCredential::V1(ref vc) => vc.issuer.clone(),
-        AnySpecializedJsonCredential::V2(ref vc) => vc.issuer.clone(),
+        AnySpecializedJsonCredential::V2(ref vc) => {
+            for subject in vc.credential_subjects.clone() {
+                if NonEmptyObject::try_from_object(subject).is_err() {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        "Empty credential subject".to_string(),
+                    ))?;
+                }
+            }
+            vc.issuer.clone()
+        }
     };
 
     // Find an appropriate verification method.
@@ -73,6 +90,7 @@ pub async fn issue(
         None => {
             if let Ok(did) = DID::new(issuer.id()) {
                 let output = resolver
+                    .did_resolver
                     .resolve(did)
                     .await
                     .context("Could not fetch issuer DID document")?;
@@ -95,6 +113,9 @@ pub async fn issue(
                     .context("Could not get any verification method for issuer DID")?
                     .into_owned()
             } else {
+                req.options.ldp_options.input_options.verification_method = Some(
+                    ReferenceOrOwned::Reference(issuer.id().to_owned().into_iri()),
+                );
                 keys.keys().find(|_| true).unwrap().clone()
             }
         }
@@ -548,7 +569,6 @@ mod test {
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 
-    #[ignore = "don't know the JWK and VM, will require writting a custom VerificationMethodResolver"]
     #[test(tokio::test)]
     async fn issue_vcdm2_non_did_issuer() {
         let keys = default_keys();
@@ -571,6 +591,34 @@ mod test {
         }))
         .unwrap();
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "ssi needs to reject unmapped types"]
+    #[test(tokio::test)]
+    async fn issue_vcdm2_unmapped_type() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              {"@vocab": null}
+            ],
+            "type": [
+              "VerifiableCredential",
+              "ExampleTestCredential"
+            ],
+            "issuer": "did:example:issuer",
+            "credentialSubject": {
+              "id": "did:example:subject"
+            }
+          },
+          "options": {
+             "type": "Ed25519Signature2020"
+           }
+        }))
+        .unwrap();
+        let res = issue(Extension(keys), CustomErrorJson(req)).await;
+        assert!(res.is_err());
     }
 
     #[test(tokio::test)]

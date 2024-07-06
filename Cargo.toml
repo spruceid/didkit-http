@@ -12,7 +12,7 @@ repository = "https://github.com/spruceid/didkit-http"
 exclude = ["/tests"]
 
 [dependencies]
-ssi = { git = "https://github.com/spruceid/ssi.git", rev = "c0d81d4", features = [
+ssi = { git = "https://github.com/spruceid/ssi.git", rev = "3bfa8cf", features = [
     "secp384r1",
 ] }
 
