@@ -27,7 +27,7 @@ tracing = "0.1.37"
 tracing-subscriber = "0.3.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_with = { version = "2.1.0", features = ["json"] }
+serde_with = { version = "3.8.3", features = ["json"] }
 serde_urlencoded = "0.7"
 iref = "3.1.2"
 static-iref = "3.0"
