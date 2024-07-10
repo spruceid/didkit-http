@@ -38,7 +38,7 @@ jobs:
           - "vc-di-ed25519signature2020-test-suite"
           # - "did-key-test-suite" # not updated to latest test suites config
           - "vc-data-model-2.0-test-suite"
-          # - "vc-di-bbs-test-suite" # not supporting non-di bbs tests
+          # - "vc-di-bbs-test-suite" # non-di verify tests failing for invalid base signature
     steps:
     - uses: actions/checkout@v4
       with:

@@ -5,12 +5,14 @@ use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
-        data_integrity::{AnySuite, CryptographicSuite, CryptosuiteString, DataIntegrity},
+        data_integrity::{
+            AnySignatureOptions, AnySuite, CryptographicSuite, CryptosuiteString, DataIntegrity,
+        },
         vc::{
             syntax::NonEmptyObject, v1::ToJwtClaims, AnyJsonCredential,
             AnySpecializedJsonCredential,
         },
-        JsonCredentialOrJws, SignatureError, VerificationParameters,
+        JsonCredentialOrJws, SignatureEnvironment, SignatureError, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
@@ -184,12 +186,20 @@ pub async fn issue(
                 .context("Could not select suite from JWK")?;
 
             let signer = KeyMapSigner(keys).into_local();
+            let mut signature_options: AnySignatureOptions = Default::default();
+            signature_options.mandatory_pointers = req
+                .options
+                .ldp_options
+                .mandatory_pointers
+                .unwrap_or_default();
             let mut vc = match suite
-                .sign(
+                .sign_with(
+                    SignatureEnvironment::default(),
                     req.credential,
                     resolver,
                     signer,
                     req.options.ldp_options.input_options,
+                    signature_options,
                 )
                 .await
             {
@@ -912,5 +922,115 @@ mod test {
         }))
         .unwrap();
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "invalid base signature"]
+    #[test(tokio::test)]
+    async fn verify_valid_vc_bbs_vcdm1() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              },
+              "https://w3id.org/security/data-integrity/v2"
+            ],
+            "id": "urn:uuid:36245ee9-9074-4b05-a777-febff2e69757",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "issuanceDate": "2024-07-10T10:09:41Z",
+            "issuer": "did:key:zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv",
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440"
+            },
+            "proof": {
+              "type": "DataIntegrityProof",
+              "verificationMethod": "did:key:zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv#zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv",
+              "cryptosuite": "bbs-2023",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "u2V0DhVkB0LUpE2PKToB5TMetM0aElIAa9QtJemJdhfJen3xZPLKWDOIWcWVdxDKPf8FhiulFbZRl29H5zndmbZqtDfVQqk5Jfn35V7uTJuD4ceFRaOcG9g84UmBbKMR1d9jsZRLow6MUxzj6hRPS-qjpESmcBrnJeaiC5JE-uUndGz-8Th6NO6KgCGGCFKM7VrkQuPzmZ2t7LfX_mY9iTFS0olHsgg3tCXgKzUAJ1HgdeugRC3jYGE750IjrEbkzd_UdQcMvpFDLPKli1NlLcWw32SEqVahJNy292b1ALOMLr-WkggdKMorTy3x4iI9P4SBqDHUc8mXP4GorHjoASu_N2IPu00aUyMnaZsqe9lZYVHeri1ZRTQoBn76VRiEm8MuxiahA8t18y2OPjTcrK_VS6r6EyrM5o6WIJJKOyWYsNhsCC8WfgO3ZMALk8qT1TVI9xIojajddUbRwzZJXroDsd9eULLHP92lAIiDX_NB3D5okxHvGV4Kq8uPDHBC5Hrp-QgMgkCxPdOchJTXpQrmrfzzvictRzmtOlM1bC-I8ox0AYNPjlWW4dMIhyIRFVNiXDtten3IZn4ks6cxZrjecUt4pnQMG9wlQBKQsKD9ruMFLxQ2yoIQAAQMEgQFA"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ]
+          }
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "invalid base signature"]
+    #[test(tokio::test)]
+    async fn verify_valid_vc_bbs_vcdm2() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              }
+            ],
+            "id": "urn:uuid:36245ee9-9074-4b05-a777-febff2e69757",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "issuer": "did:key:zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv",
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440"
+            },
+            "proof": {
+              "type": "DataIntegrityProof",
+              "verificationMethod": "did:key:zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv#zUC7GMwWWkA5UMTx7Gg6sabmpchWgq8p1xGhUXwBiDytY8BgD6eq5AmxNgjwDbAz8Rq6VFBLdNjvXR4ydEdwDEN9L4vGFfLkxs8UsU3wQj9HQGjQb7LHWdRNJv3J1kGoA3BvnBv",
+              "cryptosuite": "bbs-2023",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "u2V0DhVkB0IJyYIncBMaPosH1b9kY0_xRWfjSV9jyEcx3d4t09UjsIsRHbOcPZnzmaMP3k4EB2Y_sgAtREipv8ZEMwNPl4kyS8QaVViB7PakDCspJWO-SSbbE5qKXn22E1hJCNnulrLVVjsBmEEsCfX1Aso-AZALeeXtXlimQxEPyzggF82qbEyM9LAcs6iBi2Sf4gWVu_CuxxVzBT93on9gL27aUV5LEh2tTCCpKkimtf5RGqhDaFwsoXHrutPcwzwjH6pjsjqHIT4AXeOl7YFmWRqOPsNA5GBtbarU9OV2oZ3l5bY1gXXtF5cgGKAJheXJmiqcTykdH6UYVNT9EtJs6qIArypvYny4Bzc9hVHvgCyXQRhMXYS_muUOjZlb5mwy0alCogEagq-xaCH-WtHM_T_TsyHwf_P-eE94R6OL2D7hU-tr6J2JMYt380hBeTgbk5KbvzjXSK99LzL4On3sEA33QzgoEa6jqYsnTofcYh60zCsVqZGIAYS9vhL92O2W_9qriGULkdmbJXmuv2_GPI7G5tzItkXeMZofTvFXdZT_lYgHWNjXv5YHubaiLEaLeo124XhL_eI-RJmXJGlnDrIPydMxRscf0djJ_jND60jVnOmcnoIMAAQOBAUA"
+            }
+          },
+          "options": {
+            "checks": [
+              "proof"
+            ]
+          }
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
     }
 }
