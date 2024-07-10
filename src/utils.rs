@@ -8,9 +8,10 @@ use axum::{
 };
 use axum_extra::headers::Header;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use ssi::{
-    claims::data_integrity::{AnyInputOptions, AnySuite},
-    jwk::{Algorithm, JWK},
+    claims::data_integrity::{AnyInputOptions, AnySuite, CryptosuiteString, JsonPointerBuf},
+    jwk::{Algorithm, ECParams, Params, JWK},
     verification_methods::ProofPurpose,
 };
 use tracing::debug;
@@ -150,6 +151,11 @@ impl<'a> PartialEq<&'a str> for Accept {
 }
 
 pub fn pick_from_jwk(jwk: &JWK) -> Result<String, anyhow::Error> {
+    if let Params::EC(ECParams { curve: Some(c), .. }) = &jwk.params {
+        if c == "BLS12381G2" {
+            return Ok("bbs-2023".to_string());
+        }
+    }
     match jwk.get_algorithm() {
         Some(Algorithm::EdDSA) => Ok("eddsa-2022".to_string()),
         Some(Algorithm::ES256) | Some(Algorithm::ES384) => Ok("ecdsa-rdfc-2019".to_string()),
@@ -173,12 +179,17 @@ pub struct JWTOrLDPOptions {
     pub proof_format: ProofFormat,
 }
 
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct LDPOptions {
     #[serde(rename = "type")]
     pub type_: Option<String>,
 
-    pub cryptosuite: Option<String>,
+    pub cryptosuite: Option<CryptosuiteString>,
+
+    #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
+    pub mandatory_pointers: Option<Vec<JsonPointerBuf>>,
 
     #[serde(flatten)]
     pub input_options: AnyInputOptions,

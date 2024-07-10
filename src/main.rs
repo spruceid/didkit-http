@@ -103,7 +103,7 @@ mod test {
     }
 
     pub fn default_keys() -> KeyMap {
-        let keys: Vec<JWK> = serde_json::from_value(json!([{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}, {"kty":"EC","crv":"P-256","x":"FMWMt6D0SymYPdlxXzeGMo1OrZLTrZ44aaW0_gyqCZM","y":"3DOY-ceh9ivyq9CzrmWR67ILrC7e3_FegeBxixWoiYc","d":"DjD-ngByYFcS6bfmofNeT7WNJBtWcO2GnGHJq1S9zkU"}])).unwrap();
+        let keys: Vec<JWK> = serde_json::from_value(json!([{"kty":"OKP","crv":"Ed25519","x":"HvjBEw94RHAh9KkiD385aYZNxGkxIkwBcrLBY5Z7Koo","d":"1onWu34oC29Y09qCRl0aD2FOp5y5obTqHZxQQRT3-bs"}, {"kty":"EC","crv":"P-256","x":"FMWMt6D0SymYPdlxXzeGMo1OrZLTrZ44aaW0_gyqCZM","y":"3DOY-ceh9ivyq9CzrmWR67ILrC7e3_FegeBxixWoiYc","d":"DjD-ngByYFcS6bfmofNeT7WNJBtWcO2GnGHJq1S9zkU"}, {"kty":"EC","crv":"BLS12381G2","x":"Fln1NOjRnBckd2iuVZNmR7Agg0KyHt2NbyGEdnEJ-oeWtLP5oAjo97jwlT760SJNBoxjZAsqNkROO6iYbBlOT2ThVHfT9M12YyG63jO1WJExHxdvR9A_epWMaBPXIjrk","y":"DqCv2qtjzoMdjoh2vdLV82L8AW1-Um6auYtoyME2tBWuqvJBVJpre5Ok63iUQ2PhFMlzUsJ8mgShh3XHsyW-3NNVJfgM70sNHkjwW4Y8cUXiKgHBpXMr_Wy9syNYbyWw","d":"TLmBUbKXS_62DsgQHBdOJQx1vr6FKF8O86iAmkQZHgQ"}])).unwrap();
         keys.into_iter().map(|jwk| (jwk.to_public(), jwk)).collect()
     }
 }

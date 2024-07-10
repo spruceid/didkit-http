@@ -5,7 +5,7 @@ use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
-        data_integrity::CryptographicSuite,
+        data_integrity::{AnySuite, CryptographicSuite, CryptosuiteString, DataIntegrity},
         vc::{
             syntax::NonEmptyObject, v1::ToJwtClaims, AnyJsonCredential,
             AnySpecializedJsonCredential,
@@ -123,8 +123,12 @@ pub async fn issue(
 
     if req.options.ldp_options.type_ == Some("DataIntegrityProof".to_string()) {
         if req.options.ldp_options.cryptosuite.is_none() {
-            req.options.ldp_options.cryptosuite =
-                Some(utils::pick_from_jwk(&public_jwk).context("Could not pick cryptosuite")?)
+            req.options.ldp_options.cryptosuite = Some(
+                CryptosuiteString::new(
+                    utils::pick_from_jwk(&public_jwk).context("Could not pick cryptosuite")?,
+                )
+                .context("Could not validate cryptosuite string")?,
+            )
         }
         if let AnySpecializedJsonCredential::V1(ref vc) = req.credential {
             if !vc
@@ -237,6 +241,31 @@ pub async fn verify(
     let verifier = VerificationParameters::from_resolver(&resolver);
     let res = match (req.options.proof_format, req.verifiable_credential) {
         (Some(ProofFormat::Ldp) | None, JsonCredentialOrJws::Credential(vc)) => {
+            if vc.proofs.is_empty() {
+                return Err((StatusCode::BAD_REQUEST, "No proof in VC".to_string()))?;
+            }
+            let vc = if vc.proofs.first().map(|p| &p.type_) == Some(&AnySuite::Bbs2023) {
+                let mut selection = ssi::claims::data_integrity::AnySelectionOptions::default();
+                selection.selective_pointers = vec![
+                    "/id".parse().unwrap(),
+                    "/type".parse().unwrap(),
+                    "/credentialSubject/id".parse().unwrap(),
+                    "/issuer".parse().unwrap(),
+                ];
+                let selected = vc
+                    .select(&verifier, selection)
+                    .await
+                    .context("Failed to select for pointers")?;
+                DataIntegrity {
+                    claims: ssi::json_ld::syntax::from_value::<AnyJsonCredential>(
+                        ssi::json_ld::syntax::Value::Object(selected.claims),
+                    )
+                    .context("Failed to deserialize Json Credential for selected object")?,
+                    proofs: selected.proofs,
+                }
+            } else {
+                vc
+            };
             let mut res = match vc.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
@@ -744,5 +773,145 @@ mod test {
           }
         })).unwrap();
         let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_di_bbs_2023() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1"
+            ],
+            "id": "urn:uuid:5e1c02ab-2676-4e84-a95c-36845c11a462",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:key:zUC7Ker8jsi8tkhwz9CN1MdmunYbgXg4B7iTWJoPFiPty3ZrFg8j3a5bBX1hozUZxck8C73UunuWBZBy7PtYDCe9XYqGjWzXRqyLFqxWGo5nGArAvndYVqSQJhULMJFq5KKgW2X",
+            "issuanceDate": "2020-03-16T22:37:26.544Z",
+            "credentialSubject": {
+              "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+            }
+          },
+          "options": {
+            "type": "DataIntegrityProof"
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_bbs_2023_v1() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              }
+            ],
+            "id": "urn:uuid:b5026734-8318-4eba-8fe3-773e93404c82",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440",
+              "driverLicense": {
+                "type": "DriverLicense",
+                "documentIdentifier": "T21387yc328c7y32h23f23",
+                "dateOfBirth": "01-01-1990",
+                "expirationDate": "01-01-2030",
+                "issuingAuthority": "VA"
+              }
+            },
+            "issuer": "did:key:zUC7Ker8jsi8tkhwz9CN1MdmunYbgXg4B7iTWJoPFiPty3ZrFg8j3a5bBX1hozUZxck8C73UunuWBZBy7PtYDCe9XYqGjWzXRqyLFqxWGo5nGArAvndYVqSQJhULMJFq5KKgW2X",
+            "issuanceDate": "2024-07-10T07:56:45Z"
+          },
+          "options": {
+            "type": "DataIntegrityProof",
+            "mandatoryPointers": [
+              "/issuanceDate",
+              "/issuer"
+            ]
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    async fn issue_bbs_2023_v2() {
+        let keys = default_keys();
+        let req = serde_json::from_value(json!({
+          "credential": {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              {
+                "@protected": true,
+                "DriverLicenseCredential": "urn:example:DriverLicenseCredential",
+                "DriverLicense": {
+                  "@id": "urn:example:DriverLicense",
+                  "@context": {
+                    "@protected": true,
+                    "id": "@id",
+                    "type": "@type",
+                    "documentIdentifier": "urn:example:documentIdentifier",
+                    "dateOfBirth": "urn:example:dateOfBirth",
+                    "expirationDate": "urn:example:expiration",
+                    "issuingAuthority": "urn:example:issuingAuthority"
+                  }
+                },
+                "driverLicense": {
+                  "@id": "urn:example:driverLicense",
+                  "@type": "@id"
+                }
+              }
+            ],
+            "id": "urn:uuid:17d1a3b5-10b2-4d23-accf-568903439d88",
+            "type": [
+              "VerifiableCredential",
+              "DriverLicenseCredential"
+            ],
+            "credentialSubject": {
+              "id": "urn:uuid:1a0e4ef5-091f-4060-842e-18e519ab9440",
+              "driverLicense": {
+                "type": "DriverLicense",
+                "documentIdentifier": "T21387yc328c7y32h23f23",
+                "dateOfBirth": "01-01-1990",
+                "expirationDate": "01-01-2030",
+                "issuingAuthority": "VA"
+              }
+            },
+            "issuer": "did:key:zUC7Ker8jsi8tkhwz9CN1MdmunYbgXg4B7iTWJoPFiPty3ZrFg8j3a5bBX1hozUZxck8C73UunuWBZBy7PtYDCe9XYqGjWzXRqyLFqxWGo5nGArAvndYVqSQJhULMJFq5KKgW2X"
+          },
+          "options": {
+            "type": "DataIntegrityProof",
+            "mandatoryPointers": [
+              "/issuer"
+            ]
+          }
+        }))
+        .unwrap();
+        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 }
