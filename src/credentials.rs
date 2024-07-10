@@ -622,7 +622,6 @@ mod test {
         let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
     }
 
-    #[ignore = "ssi needs to reject unmapped types"]
     #[test(tokio::test)]
     async fn issue_vcdm2_unmapped_type() {
         let keys = default_keys();

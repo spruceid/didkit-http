@@ -37,7 +37,7 @@ jobs:
           # - "vc-di-eddsa-test-suite" # ssi doesn't have support for eddsa-rdfc-2022 just yet
           - "vc-di-ed25519signature2020-test-suite"
           # - "did-key-test-suite" # not updated to latest test suites config
-          # - "vc-data-model-2.0-test-suite" # 1 remaining failing test
+          - "vc-data-model-2.0-test-suite"
           # - "vc-di-bbs-test-suite" # not supporting non-di bbs tests
     steps:
     - uses: actions/checkout@v4
