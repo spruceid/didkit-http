@@ -157,7 +157,7 @@ pub fn pick_from_jwk(jwk: &JWK) -> Result<String, anyhow::Error> {
         }
     }
     match jwk.get_algorithm() {
-        Some(Algorithm::EdDSA) => Ok("eddsa-2022".to_string()),
+        Some(Algorithm::EdDSA) => Ok("eddsa-rdfc-2022".to_string()),
         Some(Algorithm::ES256) | Some(Algorithm::ES384) => Ok("ecdsa-rdfc-2019".to_string()),
         Some(Algorithm::None) | None => bail!("Missing algorithm"),
         Some(_) => bail!("Unsupported cryptosuite"),

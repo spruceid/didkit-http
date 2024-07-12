@@ -378,7 +378,7 @@ mod test {
           },
           "options": {
             "type": "DataIntegrityProof",
-            "cryptosuite": "eddsa-2022"
+            "cryptosuite": "eddsa-rdfc-2022"
           }
         }))
         .unwrap();

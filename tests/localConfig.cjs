@@ -26,7 +26,7 @@ module.exports = {
       "supports": {
         "vc": ['1.1', '2.0']
       },
-      "tags": ["vc-api", "eddsa-rdfc-2022", "eddsa-jcs-2022", "JWT", "vc2.0"]
+      "tags": ["vc-api", "eddsa-rdfc-2022", "JWT", "vc2.0"]
     }, {
       "id": "did:key:zDnaeqRNmCGRy8f4RgNSoj9YiwG697iWB7htXNX89G8Nu3Hxo",
       "endpoint": "https://127.0.0.1:9000/credentials/issue",
@@ -67,7 +67,7 @@ module.exports = {
         "vc": ['1.1', '2.0']
       },
       "supportedEcdsaKeyTypes": ["P-256", "P-384"],
-      "tags": ["vc-api", "Ed25519Signature2020", "JWT", "ecdsa-rdfc-2019", "eddsa-rdfc-2022", "eddsa-jcs-2022", "bbs-2023", "vc2.0"]
+      "tags": ["vc-api", "Ed25519Signature2020", "JWT", "ecdsa-rdfc-2019", "eddsa-rdfc-2022", "bbs-2023", "vc2.0"]
     }],
     "vpVerifiers": [{
       "id": "https://spruceid.com",
@@ -76,7 +76,7 @@ module.exports = {
         "vc": ['1.1', '2.0']
       },
       "supportedEcdsaKeyTypes": ["P-256", "P-384"],
-      "tags": ["vc-api", "Ed25519Signature2020", "JWT", "ecdsa-rdfc-2019", "eddsa-rdfc-2022", "eddsa-jcs-2022", "bbs-2023", "vc2.0"]
+      "tags": ["vc-api", "Ed25519Signature2020", "JWT", "ecdsa-rdfc-2019", "eddsa-rdfc-2022", "bbs-2023", "vc2.0"]
     }],
     "didResolvers": [{
       "id": "https://spruceid.com",
