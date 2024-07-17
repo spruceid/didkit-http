@@ -254,7 +254,12 @@ pub async fn verify(
             if vc.proofs.is_empty() {
                 return Err((StatusCode::BAD_REQUEST, "No proof in VC".to_string()))?;
             }
-            let vc = if vc.proofs.first().map(|p| &p.type_) == Some(&AnySuite::Bbs2023) {
+            let vc = if vc
+                .proofs
+                .first()
+                .iter()
+                .any(|p| [AnySuite::Bbs2023, AnySuite::EcdsaSd2023].contains(&p.type_))
+            {
                 let mut selection = ssi::claims::data_integrity::AnySelectionOptions::default();
                 selection.selective_pointers = vec![
                     "/id".parse().unwrap(),
@@ -262,10 +267,10 @@ pub async fn verify(
                     "/credentialSubject/id".parse().unwrap(),
                     "/issuer".parse().unwrap(),
                 ];
-                let selected = vc
-                    .select(&verifier, selection)
-                    .await
-                    .context("Failed to select for pointers")?;
+                let selected = match vc.select(&verifier, selection).await {
+                    Ok(s) => s,
+                    Err(e) => return Err((StatusCode::BAD_REQUEST, format!("{e:?}")).into()),
+                };
                 DataIntegrity {
                     claims: ssi::json_ld::syntax::from_value::<AnyJsonCredential>(
                         ssi::json_ld::syntax::Value::Object(selected.claims),
