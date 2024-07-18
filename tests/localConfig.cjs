@@ -21,7 +21,8 @@ module.exports = {
       "id": "did:key:z6MkgYAGxLBSXa6Ygk1PnUbK2F7zya8juE9nfsZhrvY7c9GD",
       "endpoint": "https://127.0.0.1:9000/credentials/issue",
       "options": {
-        "type": "DataIntegrityProof"
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-rdfc-2022"
       },
       "supports": {
         "vc": ['1.1', '2.0']
@@ -31,24 +32,50 @@ module.exports = {
       "id": "did:key:zDnaeqRNmCGRy8f4RgNSoj9YiwG697iWB7htXNX89G8Nu3Hxo",
       "endpoint": "https://127.0.0.1:9000/credentials/issue",
       "options": {
-        "type": "DataIntegrityProof"
+        "type": "DataIntegrityProof",
+        "cryptosuite": "ecdsa-rdfc-2019"
       },
       "supports": {
         "vc": ['1.1', '2.0']
       },
       "supportedEcdsaKeyTypes": ["P-256"],
-      "tags": ["vc-api", "ecdsa-rdfc-2019", "ecdsa-sd-2023", "JWT", "vc2.0"]
+      "tags": ["vc-api", "ecdsa-rdfc-2019", "JWT", "vc2.0"]
+    }, {
+      "id": "did:key:zDnaeqRNmCGRy8f4RgNSoj9YiwG697iWB7htXNX89G8Nu3Hxo",
+      "endpoint": "https://127.0.0.1:9000/credentials/issue",
+      "options": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "ecdsa-sd-2023"
+      },
+      "supports": {
+        "vc": ['1.1', '2.0']
+      },
+      "supportedEcdsaKeyTypes": ["P-256"],
+      "tags": ["vc-api", "ecdsa-sd-2023", "JWT", "vc2.0"]
     }, {
       "id": "did:key:z82LkvutaARmY8poLhUnMCAhFbts88q4yDBmkqwRFYbxpFvmE1nbGUGLKf9fD66LGUbXDce",
       "endpoint": "https://127.0.0.1:9000/credentials/issue",
       "options": {
-        "type": "DataIntegrityProof"
+        "type": "DataIntegrityProof",
+        "cryptosuite": "ecdsa-rdfc-2019"
       },
       "supports": {
         "vc": ['1.1', '2.0']
       },
       "supportedEcdsaKeyTypes": ["P-384"],
-      "tags": ["vc-api", "ecdsa-rdfc-2019", "ecdsa-sd-2023", "JWT", "vc2.0"]
+      "tags": ["vc-api", "ecdsa-rdfc-2019", "JWT", "vc2.0"]
+    }, {
+      "id": "did:key:z82LkvutaARmY8poLhUnMCAhFbts88q4yDBmkqwRFYbxpFvmE1nbGUGLKf9fD66LGUbXDce",
+      "endpoint": "https://127.0.0.1:9000/credentials/issue",
+      "options": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "ecdsa-sd-2023"
+      },
+      "supports": {
+        "vc": ['1.1', '2.0']
+      },
+      "supportedEcdsaKeyTypes": ["P-384"],
+      "tags": ["vc-api", "ecdsa-sd-2023", "JWT", "vc2.0"]
     }, {
       "id": "did:key:zUC7Ker8jsi8tkhwz9CN1MdmunYbgXg4B7iTWJoPFiPty3ZrFg8j3a5bBX1hozUZxck8C73UunuWBZBy7PtYDCe9XYqGjWzXRqyLFqxWGo5nGArAvndYVqSQJhULMJFq5KKgW2X",
       "endpoint": "https://127.0.0.1:9000/credentials/issue",
