@@ -5,9 +5,7 @@ use axum::{http::StatusCode, Extension, Json};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
-        data_integrity::{
-            AnySignatureOptions, AnySuite, CryptographicSuite, CryptosuiteString, DataIntegrity,
-        },
+        data_integrity::{AnySignatureOptions, CryptographicSuite, CryptosuiteString},
         vc::{
             syntax::NonEmptyObject, v1::ToJwtClaims, AnyJsonCredential,
             AnySpecializedJsonCredential,
@@ -254,28 +252,6 @@ pub async fn verify(
             if vc.proofs.is_empty() {
                 return Err((StatusCode::BAD_REQUEST, "No proof in VC".to_string()))?;
             }
-            let vc = if vc.proofs.first().map(|p| &p.type_) == Some(&AnySuite::Bbs2023) {
-                let mut selection = ssi::claims::data_integrity::AnySelectionOptions::default();
-                selection.selective_pointers = vec![
-                    "/id".parse().unwrap(),
-                    "/type".parse().unwrap(),
-                    "/credentialSubject/id".parse().unwrap(),
-                    "/issuer".parse().unwrap(),
-                ];
-                let selected = vc
-                    .select(&verifier, selection)
-                    .await
-                    .context("Failed to select for pointers")?;
-                DataIntegrity {
-                    claims: ssi::json_ld::syntax::from_value::<AnyJsonCredential>(
-                        ssi::json_ld::syntax::Value::Object(selected.claims),
-                    )
-                    .context("Failed to deserialize Json Credential for selected object")?,
-                    proofs: selected.proofs,
-                }
-            } else {
-                vc
-            };
             let mut res = match vc.verify(&verifier).await {
                 Ok(Ok(())) => VerificationResult {
                     checks: vec![Check::Proof],
