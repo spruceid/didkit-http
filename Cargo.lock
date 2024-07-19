@@ -1461,7 +1461,7 @@ dependencies = [
 [[package]]
 name = "did-ethr"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "hex",
  "iref",
@@ -1476,7 +1476,7 @@ dependencies = [
 [[package]]
 name = "did-ion"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "iref",
@@ -1497,7 +1497,7 @@ dependencies = [
 [[package]]
 name = "did-jwk"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "iref",
@@ -1515,7 +1515,7 @@ dependencies = [
 [[package]]
 name = "did-method-key"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "bs58",
  "iref",
@@ -1535,7 +1535,7 @@ dependencies = [
 [[package]]
 name = "did-pkh"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "bech32",
@@ -1555,7 +1555,7 @@ dependencies = [
 [[package]]
 name = "did-tz"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "bs58",
@@ -1577,7 +1577,7 @@ dependencies = [
 [[package]]
 name = "did-web"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "http 0.2.12",
  "reqwest 0.11.27",
@@ -5027,7 +5027,7 @@ dependencies = [
 [[package]]
 name = "ssi"
 version = "0.8.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "document-features",
  "ssi-bbs",
@@ -5054,7 +5054,7 @@ dependencies = [
 [[package]]
 name = "ssi-bbs"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "rand 0.8.5",
  "ssi-claims-core",
@@ -5065,7 +5065,7 @@ dependencies = [
 [[package]]
 name = "ssi-caips"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "bs58",
  "linked-data",
@@ -5078,7 +5078,7 @@ dependencies = [
 [[package]]
 name = "ssi-claims"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "educe 0.4.23",
  "iref",
@@ -5109,7 +5109,7 @@ dependencies = [
 [[package]]
 name = "ssi-claims-core"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "chrono",
  "educe 0.4.23",
@@ -5124,12 +5124,12 @@ dependencies = [
 [[package]]
 name = "ssi-contexts"
 version = "0.1.5"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 
 [[package]]
 name = "ssi-core"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "pin-project",
@@ -5140,7 +5140,7 @@ dependencies = [
 [[package]]
 name = "ssi-crypto"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "bbs",
@@ -5167,7 +5167,7 @@ dependencies = [
 [[package]]
 name = "ssi-data-integrity"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "chrono",
  "iref",
@@ -5196,7 +5196,7 @@ dependencies = [
 [[package]]
 name = "ssi-data-integrity-core"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "chrono",
  "contextual",
@@ -5231,7 +5231,7 @@ dependencies = [
 [[package]]
 name = "ssi-data-integrity-suites"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -5282,7 +5282,7 @@ dependencies = [
 [[package]]
 name = "ssi-di-sd-primitives"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "digest 0.10.7",
@@ -5303,7 +5303,7 @@ dependencies = [
 [[package]]
 name = "ssi-dids"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "did-ethr",
  "did-ion",
@@ -5320,7 +5320,7 @@ dependencies = [
 [[package]]
 name = "ssi-dids-core"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "iref",
@@ -5344,7 +5344,7 @@ dependencies = [
 [[package]]
 name = "ssi-eip712"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "hex",
  "indexmap 2.2.6",
@@ -5362,7 +5362,7 @@ dependencies = [
 [[package]]
 name = "ssi-json-ld"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-std",
  "combination",
@@ -5386,7 +5386,7 @@ dependencies = [
 [[package]]
 name = "ssi-jwk"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "blake2b_simd 0.5.11",
@@ -5420,7 +5420,7 @@ dependencies = [
 [[package]]
 name = "ssi-jws"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "blake2 0.10.6",
@@ -5448,7 +5448,7 @@ dependencies = [
 [[package]]
 name = "ssi-jwt"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5471,7 +5471,7 @@ dependencies = [
 [[package]]
 name = "ssi-multicodec"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "csv",
  "ed25519-dalek",
@@ -5486,7 +5486,7 @@ dependencies = [
 [[package]]
 name = "ssi-rdf"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "combination",
  "indexmap 2.2.6",
@@ -5500,7 +5500,7 @@ dependencies = [
 [[package]]
 name = "ssi-sd-jwt"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "rand 0.8.5",
@@ -5516,7 +5516,7 @@ dependencies = [
 [[package]]
 name = "ssi-security"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "iref",
  "linked-data",
@@ -5529,7 +5529,7 @@ dependencies = [
 [[package]]
 name = "ssi-ssh"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "sshkeys",
  "ssi-jwk",
@@ -5539,7 +5539,7 @@ dependencies = [
 [[package]]
 name = "ssi-status"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "flate2",
@@ -5566,7 +5566,7 @@ dependencies = [
 [[package]]
 name = "ssi-ucan"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "bs58",
@@ -5591,7 +5591,7 @@ dependencies = [
 [[package]]
 name = "ssi-vc"
 version = "0.3.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "base64 0.12.3",
  "bitvec 0.20.4",
@@ -5621,7 +5621,7 @@ dependencies = [
 [[package]]
 name = "ssi-verification-methods"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "derivative",
@@ -5661,7 +5661,7 @@ dependencies = [
 [[package]]
 name = "ssi-verification-methods-core"
 version = "0.1.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "bs58",
  "educe 0.4.23",
@@ -5686,7 +5686,7 @@ dependencies = [
 [[package]]
 name = "ssi-zcap-ld"
 version = "0.2.0"
-source = "git+https://github.com/spruceid/ssi.git?rev=982d26f#982d26fbf227a5a56059211401ae11e6797618bf"
+source = "git+https://github.com/spruceid/ssi.git?rev=88110a9#88110a95573be5615737c8749cdef811e6f3ea87"
 dependencies = [
  "async-trait",
  "iref",

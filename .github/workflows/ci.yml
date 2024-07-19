@@ -33,12 +33,12 @@ jobs:
         suite:
           # - "vc-api-issuer-test-suite" # not updated to latest test suites config
           # - "vc-api-verifier-test-suite" # not updated to latest test suites config
-          # - "vc-di-ecdsa-test-suite" # https://github.com/w3c/vc-di-ecdsa-test-suite/issues/86
-          - "vc-di-eddsa-test-suite"
+          # - "vc-di-ecdsa-test-suite" # https://github.com/w3c/vc-di-ecdsa-test-suite/issues/86, and time (created) tests are failing
+          # - "vc-di-eddsa-test-suite" # time (created) tests are failing
           - "vc-di-ed25519signature2020-test-suite"
           # - "did-key-test-suite" # not updated to latest test suites config
           - "vc-data-model-2.0-test-suite"
-          # - "vc-di-bbs-test-suite" # non-di verify tests failing for invalid base signature
+          - "vc-di-bbs-test-suite"
     steps:
     - uses: actions/checkout@v4
       with:
