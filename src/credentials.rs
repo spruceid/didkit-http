@@ -14,12 +14,11 @@ use ssi::{
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
-    prelude::JWSPayload,
+    prelude::*,
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
     },
-    xsd_types::DateTime,
 };
 use static_iref::iri;
 use tracing::debug;
@@ -169,6 +168,9 @@ pub async fn issue(
                     .sign(&public_jwk)
                     .await
                     .context("Could not sign JWT VC")?
+                    .as_str()
+                    .parse()
+                    .unwrap()
             } else {
                 return Err((
                     StatusCode::BAD_REQUEST,

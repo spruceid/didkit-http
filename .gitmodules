@@ -22,3 +22,6 @@
 [submodule "tests/vc-di-bbs-test-suite"]
 	path = tests/vc-di-bbs-test-suite
 	url = https://github.com/w3c/vc-di-bbs-test-suite.git
+[submodule "tests/vc-bitstring-status-list-test-suite"]
+	path = tests/vc-bitstring-status-list-test-suite
+	url = https://github.com/w3c/vc-bitstring-status-list-test-suite.git
