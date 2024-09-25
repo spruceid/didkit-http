@@ -37,8 +37,8 @@ jobs:
           - "vc-di-eddsa-test-suite"
           - "vc-di-ed25519signature2020-test-suite"
           # - "did-key-test-suite" # not updated to latest test suites config
-          # - "vc-data-model-2.0-test-suite"
-          - "vc-di-bbs-test-suite" # new tests were added to VPs which are failing
+          # - "vc-data-model-2.0-test-suite" # new tests were added to VPs which are failing
+          - "vc-di-bbs-test-suite"
           # - "vc-bitstring-status-list-test-suite" # didkit-http doesn't support revocation yet
     steps:
     - uses: actions/checkout@v4
