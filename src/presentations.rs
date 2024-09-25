@@ -7,9 +7,10 @@ use ssi::{
     claims::{
         data_integrity::CryptographicSuite,
         vc::{v1::ToJwtClaims, AnyJsonPresentation},
-        JWSPayload, JsonPresentationOrJws, VerificationParameters,
+        JsonPresentationOrJws, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
+    prelude::*,
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
@@ -41,7 +42,7 @@ pub struct IssueResponse {
 
 pub async fn issue(
     Extension(keys): Extension<KeyMap>,
-    Json(mut req): Json<IssueRequest>,
+    CustomErrorJson(mut req): CustomErrorJson<IssueRequest>,
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
     let resolver = VerificationMethodDIDResolver::<_, AnyMethod>::new(AnyDidMethod::default());
 
@@ -95,6 +96,9 @@ pub async fn issue(
                     .sign(&public_jwk)
                     .await
                     .context("Could not sign JWT VP")?
+                    .as_str()
+                    .parse()
+                    .unwrap()
             } else {
                 return Err((
                     StatusCode::BAD_REQUEST,
