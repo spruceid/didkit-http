@@ -9,3 +9,5 @@ bodysizelimit = 2097152 # 2MiB
 [default.issuer]
 # DIDKIT_HTTP_ISSUER_KEYS
 # keys = '[<JWK>, <JWK>]'
+# DIDKIT_HTTP_ISSUER_BASEURL
+# base_url = "http://127.0.0.1:3000/"
