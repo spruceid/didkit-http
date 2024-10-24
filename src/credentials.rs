@@ -1,29 +1,41 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::DerefMut};
 
 use anyhow::Context as _;
 use axum::{http::StatusCode, Extension, Json};
+use iref::UriBuf;
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
         data_integrity::{AnySignatureOptions, CryptographicSuite, CryptosuiteString},
         vc::{
-            syntax::NonEmptyObject, v1::ToJwtClaims, AnyJsonCredential,
-            AnySpecializedJsonCredential,
+            syntax::{MaybeIdentifiedTypedObject, NonEmptyObject},
+            v1::ToJwtClaims,
+            AnyJsonCredential, AnySpecializedJsonCredential,
         },
         JsonCredentialOrJws, SignatureEnvironment, SignatureError, VerificationParameters,
     },
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
     prelude::*,
+    status::{
+        any::{AnyEntrySet, AnyStatusMap},
+        bitstring_status_list::{
+            BitstringStatusList, BitstringStatusListEntry, SizedStatusList, StatusPurpose,
+            StatusSize, BITSTRING_STATUS_LIST_ENTRY_TYPE,
+        },
+        client::StatusMapProvider,
+        StatusMapEntry,
+    },
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
     },
 };
 use static_iref::iri;
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::{
+    config::Config,
     dids::{AnyDidMethod, CustomVerificationMethodResolver},
     error::Error,
     keys::KeyMapSigner,
@@ -48,6 +60,7 @@ pub struct IssueResponse {
 
 #[axum::debug_handler]
 pub async fn issue(
+    Extension(config): Extension<Config>,
     Extension(keys): Extension<KeyMap>,
     CustomErrorJson(mut req): CustomErrorJson<IssueRequest>,
 ) -> Result<(StatusCode, Json<IssueResponse>), Error> {
@@ -157,7 +170,48 @@ pub async fn issue(
                 vc.issuance_date = Some(DateTime::now_ms());
             }
         }
-        AnySpecializedJsonCredential::V2(_) => {}
+        AnySpecializedJsonCredential::V2(ref mut vc) => {
+            if let Some(status_entry) = vc.extra_properties.get_mut("statusEntry") {
+                // Temporary fix for invalid data
+                let status_entry_object = status_entry
+                    .as_object_mut()
+                    .context("statusEntry not an object")?;
+                //if let Ok(Some(index)) = status_entry_object.get_unique("statusListIndex") {
+                //    if index.is_boolean() {
+                //        status_entry_object.insert("statusListIndex".into(), "1".into());
+                //    }
+                //}
+                status_entry_object.insert("statusPurpose".into(), "revocation".into());
+                let deserialized: Result<BitstringStatusListEntry, _> =
+                    serde_json::from_str(&status_entry.to_string());
+                match deserialized {
+                    Ok(_) => {}
+                    Err(e) => {
+                        debug!("Invalid credential status: {e}");
+                        return Err((
+                            StatusCode::BAD_REQUEST,
+                            format!("Invalid credential status: {e}"),
+                        ))?;
+                    }
+                }
+            }
+            let status_list_url: UriBuf = config
+                .issuer
+                .base_url
+                .join("statuslist")
+                .context("Could not join status list URL")?
+                .to_string()
+                .parse()
+                .context("Could not parse status list URL")?;
+            let status: MaybeIdentifiedTypedObject = serde_json::from_value(serde_json::json!({
+                "type": BITSTRING_STATUS_LIST_ENTRY_TYPE,
+                "statusPurpose": "revocation",
+                "statusListIndex": "1",
+                "statusListCredential": status_list_url
+            }))
+            .unwrap();
+            vc.credential_status = vec![status];
+        }
     }
 
     let res = match req.options.proof_format {
@@ -227,6 +281,7 @@ pub async fn issue(
             JsonCredentialOrJws::Credential(vc)
         }
     };
+    debug!("{res:?}");
     Ok((
         StatusCode::CREATED,
         Json(IssueResponse {
@@ -330,12 +385,24 @@ pub async fn verify(
 
 #[cfg(test)]
 mod test {
+    use figment::{
+        providers::{Format, Toml},
+        Figment,
+    };
     use serde_json::json;
     use test_log::test;
 
     use crate::test::default_keys;
 
     use super::*;
+
+    fn config() -> crate::config::Config {
+        Figment::new()
+            .merge(Toml::string(include_str!("../defaults.toml")).nested())
+            .select("test")
+            .extract()
+            .expect("Unable to load config")
+    }
 
     #[test(tokio::test)]
     async fn issue_di_ed25519() {
@@ -361,7 +428,9 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -387,7 +456,9 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -413,7 +484,9 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test]
@@ -498,7 +571,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -522,7 +597,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -557,7 +634,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -583,7 +662,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -607,7 +688,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -633,7 +716,7 @@ mod test {
            }
         }))
         .unwrap();
-        let res = issue(Extension(keys), CustomErrorJson(req)).await;
+        let res = issue(Extension(config()), Extension(keys), CustomErrorJson(req)).await;
         assert!(res.is_err());
     }
 
@@ -785,7 +868,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -843,7 +928,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[test(tokio::test)]
@@ -899,7 +986,9 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(keys), CustomErrorJson(req)).await.unwrap();
+        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
+            .await
+            .unwrap();
     }
 
     #[ignore = "invalid base signature"]
