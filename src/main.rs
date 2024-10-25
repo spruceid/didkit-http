@@ -8,10 +8,6 @@ use figment::{
     providers::{Env, Format, Toml},
     Figment,
 };
-use iref::UriBuf;
-use ssi::status::bitstring_status_list::{
-    BitstringStatusList, SizedBitString, SizedStatusList, StatusPurpose, StatusSize, TimeToLive,
-};
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::{limit::RequestBodyLimitLayer, trace::TraceLayer};
@@ -99,6 +95,7 @@ mod test {
     pub fn default_config() -> config::Config {
         Figment::new()
             .merge(Toml::string(include_str!("../defaults.toml")).nested())
+            .select("test")
             .extract()
             .expect("Unable to load config")
     }

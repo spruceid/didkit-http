@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::DerefMut};
+use std::borrow::Cow;
 
 use anyhow::Context as _;
 use axum::{http::StatusCode, Extension, Json};
@@ -17,22 +17,14 @@ use ssi::{
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
     prelude::*,
-    status::{
-        any::{AnyEntrySet, AnyStatusMap},
-        bitstring_status_list::{
-            BitstringStatusList, BitstringStatusListEntry, SizedStatusList, StatusPurpose,
-            StatusSize, BITSTRING_STATUS_LIST_ENTRY_TYPE,
-        },
-        client::StatusMapProvider,
-        StatusMapEntry,
-    },
+    status::bitstring_status_list::{BitstringStatusListEntry, BITSTRING_STATUS_LIST_ENTRY_TYPE},
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
     },
 };
 use static_iref::iri;
-use tracing::{debug, warn};
+use tracing::debug;
 
 use crate::{
     config::Config,
@@ -385,24 +377,12 @@ pub async fn verify(
 
 #[cfg(test)]
 mod test {
-    use figment::{
-        providers::{Format, Toml},
-        Figment,
-    };
     use serde_json::json;
     use test_log::test;
 
-    use crate::test::default_keys;
+    use crate::test::{default_config, default_keys};
 
     use super::*;
-
-    fn config() -> crate::config::Config {
-        Figment::new()
-            .merge(Toml::string(include_str!("../defaults.toml")).nested())
-            .select("test")
-            .extract()
-            .expect("Unable to load config")
-    }
 
     #[test(tokio::test)]
     async fn issue_di_ed25519() {
@@ -428,9 +408,13 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -456,9 +440,13 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -484,9 +472,13 @@ mod test {
         }))
         .unwrap();
 
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test]
@@ -571,9 +563,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -597,9 +593,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -634,9 +634,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -662,9 +666,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -688,9 +696,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -716,7 +728,12 @@ mod test {
            }
         }))
         .unwrap();
-        let res = issue(Extension(config()), Extension(keys), CustomErrorJson(req)).await;
+        let res = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await;
         assert!(res.is_err());
     }
 
@@ -868,9 +885,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -928,9 +949,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[test(tokio::test)]
@@ -986,9 +1011,13 @@ mod test {
           }
         }))
         .unwrap();
-        let _ = issue(Extension(config()), Extension(keys), CustomErrorJson(req))
-            .await
-            .unwrap();
+        let _ = issue(
+            Extension(default_config()),
+            Extension(keys),
+            CustomErrorJson(req),
+        )
+        .await
+        .unwrap();
     }
 
     #[ignore = "invalid base signature"]
