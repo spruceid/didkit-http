@@ -17,7 +17,7 @@ ssi = { version = "0.9.0", features = [
     "bbs",
 ] }
 
-anyhow = "1.0.70"
+anyhow = "1.0.92"
 axum = { version = "0.7.7", features = ["macros"] }
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 figment = { version = "0.10.8", features = ["env", "toml"] }
