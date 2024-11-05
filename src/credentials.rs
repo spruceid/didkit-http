@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use anyhow::Context as _;
 use axum::{http::StatusCode, Extension, Json};
-use iref::UriBuf;
+use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
 use serde::{Deserialize, Serialize};
 use ssi::{
     claims::{
@@ -10,6 +10,7 @@ use ssi::{
         vc::{
             syntax::{MaybeIdentifiedTypedObject, NonEmptyObject},
             v1::ToJwtClaims,
+            v2::Credential,
             AnyJsonCredential, AnySpecializedJsonCredential,
         },
         JsonCredentialOrJws, SignatureEnvironment, SignatureError, VerificationParameters,
@@ -17,7 +18,7 @@ use ssi::{
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
     prelude::*,
-    status::bitstring_status_list::{BitstringStatusListEntry, BITSTRING_STATUS_LIST_ENTRY_TYPE},
+    status::bitstring_status_list::{BitstringStatusListEntry, StatusPurpose, StatusSize},
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
@@ -164,15 +165,9 @@ pub async fn issue(
         }
         AnySpecializedJsonCredential::V2(ref mut vc) => {
             if let Some(status_entry) = vc.extra_properties.get_mut("statusEntry") {
-                // Temporary fix for invalid data
                 let status_entry_object = status_entry
                     .as_object_mut()
                     .context("statusEntry not an object")?;
-                //if let Ok(Some(index)) = status_entry_object.get_unique("statusListIndex") {
-                //    if index.is_boolean() {
-                //        status_entry_object.insert("statusListIndex".into(), "1".into());
-                //    }
-                //}
                 status_entry_object.insert("statusPurpose".into(), "revocation".into());
                 let deserialized: Result<BitstringStatusListEntry, _> =
                     serde_json::from_str(&status_entry.to_string());
@@ -187,7 +182,7 @@ pub async fn issue(
                     }
                 }
             }
-            let status_list_url: UriBuf = config
+            let status_list_url = config
                 .issuer
                 .base_url
                 .join("statuslist")
@@ -195,13 +190,30 @@ pub async fn issue(
                 .to_string()
                 .parse()
                 .context("Could not parse status list URL")?;
-            let status: MaybeIdentifiedTypedObject = serde_json::from_value(serde_json::json!({
-                "type": BITSTRING_STATUS_LIST_ENTRY_TYPE,
-                "statusPurpose": "revocation",
-                "statusListIndex": "1",
-                "statusListCredential": status_list_url
-            }))
-            .unwrap();
+            let status_list_entry_url = if let Some(id) = vc.id() {
+                Some(
+                    config
+                        .issuer
+                        .base_url
+                        .join(&percent_encode(id.as_bytes(), NON_ALPHANUMERIC).to_string())
+                        .context("Could not join status list entry URL")?
+                        .to_string()
+                        .parse()
+                        .context("Could not parse status list entry URL")?,
+                )
+            } else {
+                None
+            };
+            let status = BitstringStatusListEntry::new(
+                status_list_entry_url,
+                StatusSize::default(), // 2.try_into().unwrap(),
+                StatusPurpose::Revocation,
+                vec![],
+                status_list_url,
+                1,
+            );
+            let status: MaybeIdentifiedTypedObject =
+                serde_json::from_value(serde_json::to_value(&status).unwrap()).unwrap();
             vc.credential_status = vec![status];
         }
     }

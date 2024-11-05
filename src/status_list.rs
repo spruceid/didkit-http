@@ -38,7 +38,7 @@ pub async fn status_list(
     let status_list = BitstringStatusList::new(
         Some(status_list_url.clone()),
         StatusPurpose::Revocation,
-        SizedBitString::new(StatusSize::default()).encode(),
+        SizedBitString::new(StatusSize::default()).encode(), // Tests are broken for status size > 1
         TimeToLive::default(),
     );
 
