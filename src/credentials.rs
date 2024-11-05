@@ -212,8 +212,18 @@ pub async fn issue(
                 status_list_url,
                 1,
             );
+            let mut serialized_status = serde_json::to_value(&status).unwrap();
+            if serialized_status
+                .as_object_mut()
+                .unwrap()
+                .get("id")
+                .unwrap()
+                .is_null()
+            {
+                serialized_status.as_object_mut().unwrap().remove("id");
+            }
             let status: MaybeIdentifiedTypedObject =
-                serde_json::from_value(serde_json::to_value(&status).unwrap()).unwrap();
+                serde_json::from_value(serialized_status).unwrap();
             vc.credential_status = vec![status];
         }
     }

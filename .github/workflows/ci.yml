@@ -29,6 +29,7 @@ jobs:
   vc_api_test_suites:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         suite:
           # - "vc-api-issuer-test-suite" # not updated to latest test suites config
