@@ -1151,4 +1151,101 @@ mod test {
         })).unwrap();
         let _ = verify(CustomErrorJson(req)).await.unwrap();
     }
+
+    #[test(tokio::test)]
+    async fn verify_multiple_proofs() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://w3id.org/security/data-integrity/v2"
+            ],
+            "id": "urn:uuid:86294362-4254-4f36-854f-3952fe42555d",
+            "type": [
+              "VerifiableCredential"
+            ],
+            "issuer": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b",
+            "issuanceDate": "2020-03-16T22:37:26.544Z",
+            "credentialSubject": {
+              "id": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b"
+            },
+            "proof": [
+              {
+                "type": "DataIntegrityProof",
+                "created": "2024-11-05T19:11:37Z",
+                "verificationMethod": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b#z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b",
+                "cryptosuite": "eddsa-rdfc-2022",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z4WrjAqrwg92y1RR8S63rav19ZmYWx6Vs1HBcPJgXnCiEfef4i1NqKG7jMyM2DtNdMXvACudKcra92VPxW9hfatbZ"
+              },
+              {
+                "type": "DataIntegrityProof",
+                "created": "2024-11-05T19:11:37Z",
+                "verificationMethod": "did:key:z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b#z6MktKwz7Ge1Yxzr4JHavN33wiwa8y81QdcMRLXQsrH9T53b",
+                "cryptosuite": "eddsa-rdfc-2022",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z4WrjAqrwg92y1RR8S63rav19ZmYWx6Vs1HBcPJgXnCiEfef4i1NqKG7jMyM2DtNdMXvACudKcra92VPxW9hfatbZ"
+              }
+            ]
+          },
+          "options": {}
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
+
+    #[ignore = "ssi doesn't seem to work with embedded @context in the context, seems like there are similar tests in the vcdm2 test suite"]
+    #[test(tokio::test)]
+    async fn verify_previous_proof() {
+        let req = serde_json::from_value(json!({
+          "verifiableCredential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://w3id.org/security/data-integrity/v2",
+              {
+                "@context": {
+                  "AlumniCredential": "https://www.example.org/AlumniCredential",
+                  "alumniOf": "https://www.example.org/alumniOf",
+                  "description": "https://schema.org/description",
+                  "name": "https://schema.org/name"
+                }
+              }
+            ],
+            "id": "urn:uuid:58172aac-d8ba-11ed-83dd-0b3aef56cc33",
+            "type": [
+              "VerifiableCredential",
+              "AlumniCredential"
+            ],
+            "name": "Alumni Credential",
+            "description": "A minimum viable example of a VC 1.1 Alumni Credential.",
+            "issuer": "did:key:z6MkhWqdDBPojHA7cprTGTt5yHv5yUi1B8cnXn8ReLumkw6E",
+            "issuanceDate": "2023-01-01T00:00:00Z",
+            "credentialSubject": {
+              "id": "did:example:abcdefgh",
+              "alumniOf": "The School of Examples"
+            },
+            "proof": [
+              {
+                "type": "DataIntegrityProof",
+                "id": "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544",
+                "cryptosuite": "eddsa-rdfc-2022",
+                "created": "2023-02-26T22:06:38Z",
+                "verificationMethod": "did:key:z6MktgKTsu1QhX6QPbyqG6geXdw6FQCZBPq7uQpieWbiQiG7#z6MktgKTsu1QhX6QPbyqG6geXdw6FQCZBPq7uQpieWbiQiG7",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z5gL4Hy8N4B6zr9mQAGqpsry1iTdxEAp4zjqPNQv7iTvgdkMcHKnMALvPwU3YAKZhYn3k3Jmut2TAMxSaHaggFtf4"
+              },
+              {
+                "type": "DataIntegrityProof",
+                "cryptosuite": "eddsa-rdfc-2022",
+                "created": "2023-02-26T22:16:38Z",
+                "verificationMethod": "did:key:z6MkhWqdDBPojHA7cprTGTt5yHv5yUi1B8cnXn8ReLumkw6E#z6MkhWqdDBPojHA7cprTGTt5yHv5yUi1B8cnXn8ReLumkw6E",
+                "proofPurpose": "assertionMethod",
+                "previousProof": "urn:uuid:26329423-bec9-4b2e-88cb-a7c7d9dc4544",
+                "proofValue": "z2ENoYDUK8cMMJMvwRGyHVX23pPeHaZfCgpbDFs15FXGaeFseeqzZf5nWXF14JPoBcqdr39vVPgrAUbWT2VYYacrG"
+              }
+            ]
+          },
+          "options": {}
+        })).unwrap();
+        let _ = verify(CustomErrorJson(req)).await.unwrap();
+    }
 }

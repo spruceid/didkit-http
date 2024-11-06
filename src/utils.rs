@@ -213,7 +213,7 @@ impl LDPOptions {
 #[serde(rename_all = "camelCase")]
 //#[serde(deny_unknown_fields)]
 pub struct VerificationOptions {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "default_checks")]
     pub checks: Vec<Check>,
 
     /// Proof format (not standard in vc-api)
@@ -228,6 +228,10 @@ pub struct VerificationOptions {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_proof_purpose: Option<ProofPurpose>,
+}
+
+fn default_checks() -> Vec<Check> {
+    vec![Check::Proof]
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
