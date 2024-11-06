@@ -22,6 +22,7 @@ mod error;
 mod identifiers;
 mod keys;
 mod presentations;
+mod status_list;
 mod utils;
 
 pub async fn healthcheck() {}
@@ -64,6 +65,7 @@ async fn main() {
         .route("/presentations/issue", post(presentations::issue))
         .route("/presentations/verify", post(presentations::verify))
         .route("/identifiers/:id", get(identifiers::resolve))
+        .route("/statuslist", get(status_list::status_list))
         .layer(TraceLayer::new_for_http())
         .layer(RequestBodyLimitLayer::new(config.http.body_size_limit))
         .layer(
@@ -93,6 +95,7 @@ mod test {
     pub fn default_config() -> config::Config {
         Figment::new()
             .merge(Toml::string(include_str!("../defaults.toml")).nested())
+            .select("test")
             .extract()
             .expect("Unable to load config")
     }
