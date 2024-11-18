@@ -34,3 +34,9 @@ DIDKit HTTP does not implement complete protection against resource exhaustion. 
 [vc-api]: https://w3c-ccg.github.io/vc-api/
 [vc-http-api-0.0.1]: https://github.com/w3c-ccg/vc-api/pull/72
 [did-resolution-https-binding]: https://w3c-ccg.github.io/did-resolution/#bindings-https
+
+## Funding
+
+This work is funded in part by the U.S. Department of Homeland Security's Science and Technology Directorate under contract 70RSAT24T00000011 (Open-Source and Privacy-Preserving Digital Credentialing Infrastructure).
+Through this contract, SpruceID’s open-source libraries will be used to build privacy-preserving digital credential wallets and verifier capabilities to support standards while ensuring safe usage and interoperability across sectors like finance, healthcare, and various cross-border applications.
+To learn more about this work, [read more here](https://spruceid.com/customer-highlight/dhs-highlight) . 
