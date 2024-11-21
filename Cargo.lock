@@ -4941,9 +4941,9 @@ dependencies = [
 
 [[package]]
 name = "ssi"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baf6c9acc113fab505c72e63aa389c686ed8106c53622a0d1d0a1953296850ba"
+checksum = "48ce557ccec13330c9ba2cab173acf63f6393ec14fffd3312666c8eea16c45b4"
 dependencies = [
  "document-features",
  "ssi-bbs",
