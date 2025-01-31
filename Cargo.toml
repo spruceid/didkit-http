@@ -19,7 +19,7 @@ ssi = { version = "0.10.2", features = [
 
 anyhow = "1.0.95"
 axum = { version = "0.7.9", features = ["macros"] }
-axum-extra = { version = "0.9.3", features = ["typed-header"] }
+axum-extra = { version = "0.10.0", features = ["typed-header"] }
 figment = { version = "0.10.8", features = ["env", "toml"] }
 tokio = { version = "1.43", features = ["macros", "rt-multi-thread"] }
 tower = "0.5.2"
