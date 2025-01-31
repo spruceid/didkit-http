@@ -64,7 +64,7 @@ async fn main() {
         .route("/credentials/verify", post(credentials::verify))
         .route("/presentations/issue", post(presentations::issue))
         .route("/presentations/verify", post(presentations::verify))
-        .route("/identifiers/:id", get(identifiers::resolve))
+        .route("/identifiers/{:id}", get(identifiers::resolve))
         .route("/statuslist", get(status_list::status_list))
         .layer(TraceLayer::new_for_http())
         .layer(RequestBodyLimitLayer::new(config.http.body_size_limit))

@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, bail};
 use axum::{
-    async_trait,
     extract::{rejection::JsonRejection, FromRequest},
     http::{header::ACCEPT, Request, StatusCode},
 };
@@ -18,7 +17,6 @@ use tracing::debug;
 
 pub struct CustomErrorJson<T>(pub T);
 
-#[async_trait]
 impl<S, T> FromRequest<S> for CustomErrorJson<T>
 where
     axum::Json<T>: FromRequest<S, Rejection = JsonRejection>,
