@@ -32,7 +32,7 @@ serde_with = { version = "3.11.0", features = ["json"] }
 serde_urlencoded = "0.7"
 iref = "3.1.2"
 static-iref = "3.0"
-url = { version = "2.3.1", features = ["serde"] }
+url = { version = "2.5.4", features = ["serde"] }
 percent-encoding = "2.2.0"
 
 [dev-dependencies]
