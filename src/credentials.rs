@@ -18,7 +18,7 @@ use ssi::{
     dids::{DIDResolver, VerificationMethodDIDResolver, DID},
     json_ld::syntax::Context,
     prelude::*,
-    status::bitstring_status_list::{BitstringStatusListEntry, StatusPurpose, StatusSize},
+    status::bitstring_status_list::{BitstringStatusListEntry, StatusMessage, StatusPurpose},
     verification_methods::{
         AnyMethod, GenericVerificationMethod, MaybeJwkVerificationMethod, ReferenceOrOwned,
         VerificationMethodResolver,
@@ -204,14 +204,18 @@ pub async fn issue(
             } else {
                 None
             };
-            let status = BitstringStatusListEntry::new(
-                status_list_entry_url,
-                StatusSize::default(), // 2.try_into().unwrap(),
-                StatusPurpose::Revocation,
-                vec![],
-                status_list_url,
-                1,
-            );
+            let status = BitstringStatusListEntry {
+                id: status_list_entry_url,
+                status_size: 2.try_into().unwrap(), // Using more than 1 to trigger more tests
+                status_purpose: StatusPurpose::Revocation,
+                status_messages: vec![
+                    StatusMessage::new(0, "test message 0".into()),
+                    StatusMessage::new(1, "test message 1".into()),
+                ],
+                status_list_credential: status_list_url,
+                status_list_index: 1,
+                status_reference: Some("https://example.org/status-dictionary/".parse().unwrap()),
+            };
             let mut serialized_status = serde_json::to_value(&status).unwrap();
             if serialized_status
                 .as_object_mut()

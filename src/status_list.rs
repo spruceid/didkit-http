@@ -8,7 +8,7 @@ use ssi::{
     prelude::{AnyMethod, AnySuite, CryptographicSuite, DataIntegrity, ProofOptions},
     status::bitstring_status_list::{
         BitstringStatusList, BitstringStatusListCredential, SizedBitString, StatusPurpose,
-        StatusSize, TimeToLive,
+        TimeToLive,
     },
     verification_methods::ReferenceOrOwned,
 };
@@ -38,7 +38,7 @@ pub async fn status_list(
     let status_list = BitstringStatusList::new(
         Some(status_list_url.clone()),
         StatusPurpose::Revocation,
-        SizedBitString::new(StatusSize::default()).encode(), // Tests are broken for status size > 1
+        SizedBitString::new(2.try_into().unwrap()).encode(), // Using more than 1 to trigger more tests
         TimeToLive::default(),
     );
 
